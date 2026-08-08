@@ -34,6 +34,7 @@ class SimBroker:
         self.positions: dict[str, Position] = {}
         self._pending: list[_PendingOrder] = []
         self.fills: list[Fill] = []
+        self.rejected_conflicts = 0
 
     # -- order intake ------------------------------------------------------
     def submit(self, intent: TradeIntent) -> None:
@@ -48,9 +49,31 @@ class SimBroker:
             if po.intent.instrument != bar.symbol:
                 still_pending.append(po)
                 continue
+            if self._conflicts(po.intent):
+                self.rejected_conflicts += 1
+                continue
             fills.append(self._fill(po.intent, bar, bar.open))
         self._pending = still_pending
         return fills
+
+    def _conflicts(self, intent: TradeIntent) -> bool:
+        """True if this entry would merge into another strategy's position.
+
+        A broker nets per symbol, so two strategies long the same instrument
+        become one position with one average price — the second strategy's
+        trade then cannot be measured separately, and neither can exit without
+        closing the other. Refusing is the honest simulation of a constraint
+        that genuinely exists live; silently merging is not.
+
+        Reducing or closing is always allowed, whoever asks: that is how the
+        forced flatten and protective stops work.
+        """
+        pos = self.positions.get(intent.instrument)
+        if pos is None or pos.qty == 0 or not pos.strategy_id:
+            return False
+        signed = intent.qty if intent.side == Side.BUY else -intent.qty
+        increases = (signed > 0) == (pos.qty > 0)
+        return increases and intent.signal.strategy_id != pos.strategy_id
 
     def check_stops(self, bar: Bar) -> list[Fill]:
         """Trigger protective stops inside this bar's range."""
@@ -80,6 +103,11 @@ class SimBroker:
     def _fill(self, intent: TradeIntent, bar: Bar, base_price: Decimal) -> Fill:
         adverse = 1 if intent.side == Side.BUY else -1
         price = round_to_tick(base_price * (1 + adverse * self._cost_frac))
+        # An open is owned by the signalling strategy; anything touching an
+        # existing position is owned by whoever opened it, so a generic flatten
+        # or a stop does not launder the trade into a different bucket.
+        held = self.positions.get(intent.instrument)
+        owner = held.strategy_id if held is not None and held.qty != 0 else None
         fill = Fill(
             client_order_id=intent.client_order_id,
             instrument=intent.instrument,
@@ -87,6 +115,7 @@ class SimBroker:
             qty=intent.qty,
             price=price,
             ts_utc=bar.ts_utc,
+            strategy_id=owner or intent.signal.strategy_id,
         )
         self._apply(fill, intent)
         self.fills.append(fill)

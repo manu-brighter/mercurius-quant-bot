@@ -97,6 +97,11 @@ class Fill:
     price: Decimal
     ts_utc: datetime
     fee: Decimal = Decimal("0")
+    # Which strategy this fill belongs to. Carried on the fill because a broker
+    # nets positions per symbol: by the time a closing fill is processed the
+    # position it belonged to is already gone, so attribution cannot be
+    # recovered from broker state afterwards.
+    strategy_id: str | None = None
 
 
 @dataclass(slots=True)

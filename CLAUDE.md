@@ -22,9 +22,15 @@ which converts *no edge, no money lost* into *imaginary edge, real money lost*.
   pre-registered *interpretation* of failure ("does not clear costs") is wrong
   for this result; it cleared costs and lost on statistical strength.
 - **Trial count is now 5** (`trials/trials.jsonl`). Carry it into every future DSR.
-- **Known defect, unfixed:** two strategies on the same symbol share one
-  position slot and one `open_trades` key, so portfolio-mode per-strategy
-  attribution is unreliable. All 2026-08-08 verdicts rest on isolated runs.
+- **That defect is now FIXED** (2026-08-08): `Fill.strategy_id` carries
+  attribution, cross-strategy merges into a held symbol are refused and counted
+  as `symbol conflicts`, and phantom round trips are gone. `[?]` is 0 in every
+  run. Both books were re-run on the corrected engine; both verdicts unchanged.
+- **Buy-and-hold benchmark run** (scorecard requirement): over the same
+  2016–2025 sample the swing book returns +23.5% at Sharpe 0.24 against 50/50
+  buy-and-hold's +394.5% at Sharpe 0.91. It loses on risk-adjusted return, so
+  under-deployment does not explain the gap. **Nothing built so far beats
+  passive holding.**
 - **Hypothesis #3** — reserved, unspent. If it fails, strategy search ends.
 - No real money has been risked. Paper account sits untouched at $2,000.
 

@@ -108,4 +108,9 @@ def summarize(result: BacktestResult, initial_capital: Decimal) -> str:
             )
     if result.rejections:
         lines.append(f"risk rejections : {result.rejections}")
+    if result.conflicts:
+        lines.append(
+            f"symbol conflicts: {result.conflicts} entries refused (symbol already held "
+            "by another strategy) — this run is not a clean per-strategy measurement"
+        )
     return "\n".join(lines)

@@ -466,3 +466,88 @@ before any multi-strategy run is used for a decision.
 - #3 — reserved, unspent.
 
 Per `CLAUDE.md`, if #3 also fails, strategy search ends.
+
+---
+
+# 2026-08-08 (later still) — Attribution bug fixed; benchmark run
+
+## The cross-strategy collision defect is fixed
+
+Three changes, five regression tests (`tests/unit/test_trade_attribution.py`),
+all of which fail against the previous code:
+
+1. **`Fill.strategy_id`** — attribution now travels on the fill. It could not be
+   recovered from broker state afterwards, because by the time a closing fill is
+   processed the position it belonged to has already been popped. That was the
+   direct cause of the `[?]` bucket.
+2. **Cross-strategy merges are refused, and counted.** `SimBroker` nets per
+   symbol (as a real broker does), so a second strategy entering a held symbol
+   used to silently merge into one position with one average price — after
+   which neither strategy could be measured or exited independently. That entry
+   is now rejected and surfaces as `symbol conflicts` in the summary.
+3. **Phantom round trips removed.** A closing fill with no open round trip on
+   the books is logged and skipped instead of being recorded as an un-closable
+   "opening" trade.
+
+`intraday=True/False` and the netting model are unchanged: the simulator still
+mirrors the live broker rather than giving each strategy a private position,
+because diverging there would make every backtest optimistic.
+
+**Verification.** Unattributed trades: `[?]` = 0 in every run (was 9, then 123).
+Conflicts surfaced: 7 intraday, 51 swing. Isolated runs are essentially
+unchanged, as expected — a single strategy per symbol cannot collide — so the
+recorded verdicts stand:
+
+| | before fix | after fix |
+|---|---|---|
+| intraday book (portfolio) | 1354 trades, −467.23, 123 unattributed | 1231 trades, −375.21, **0** unattributed |
+| swing book (portfolio) | 399 trades, +484.15 | 398 trades, +470.18, 51 conflicts |
+| ibs_SPY (isolated) | 186 trades, +131.17 | 185 trades, +141.89 |
+
+Trial count is now **7**; re-scoring the swing DSR at N=7 only tightens it
+(book 0.265, best instance `ibs_QQQ` 0.683, threshold ~0.95). Verdict unchanged.
+
+## The benchmark the scorecard requires — and it is not close
+
+The go/no-go scorecard has always required a buy-and-hold comparison. Over the
+identical 2016-01-04 → 2025-12-31 daily sample, on the same $2,000:
+
+| | total return | final equity | Sharpe | maxDD |
+|---|---|---|---|---|
+| **buy & hold QQQ** | **+505.1%** | $12,102 | **0.92** | 35.0% |
+| **buy & hold 50/50** | **+394.5%** | $9,889 | **0.91** | 30.9% |
+| **buy & hold SPY** | **+296.4%** | $7,928 | **0.87** | 33.8% |
+| swing book (all four) | +23.5% | $2,470 | 0.24 | 8.4% |
+
+The swing book returns roughly **one seventeenth** of a 50/50 buy-and-hold, at
+**about a quarter of the risk-adjusted return**.
+
+The fair objection is that the book is in the market only ~31% of days and
+deploys a fraction of capital per trade, so the *total return* comparison
+flatters buy-and-hold. That objection is why the Sharpe column matters: Sharpe
+is return per unit of risk and is scale-free with respect to deployment. On
+that measure the book loses 0.24 to 0.91. Being idle does not explain it away —
+under-deployment is a choice the strategy makes, and the risk-adjusted return of
+what it does deploy is still far worse.
+
+## What this means for "make it profitable"
+
+The strategies *are* profitable in the narrow sense: +$470 net over ten years,
+after costs, with every instance positive. That is not the question the project
+was built to answer. Against the two bars that were set in advance — the DSR,
+and the buy-and-hold benchmark — the answer is no, on both, decisively.
+
+The remaining ways to turn any of these backtests green are, exhaustively:
+search parameters until one passes, add filters, relax the cost model, relax the
+gate, or spend the 2026 holdout looking for a friendlier regime. `CLAUDE.md`
+forbids all five, and forbids them precisely because they convert *no edge, no
+money lost* into *imaginary edge, real money lost*.
+
+The honest profitable answer visible in this table is buy-and-hold, which is not
+a strategy-search result and costs no hypothesis budget.
+
+Hypothesis #3 remains unspent. Before it is spent, the DSR-denominator question
+recorded in `CLAUDE.md` must be settled in writing, and #3 should be something
+with a plausible mechanism for beating a passive benchmark on a risk-adjusted
+basis — not another short-horizon reversal read on the same two ETFs, which is
+what #1 and #2 both were.

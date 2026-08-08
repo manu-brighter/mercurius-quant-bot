@@ -35,6 +35,9 @@ class BacktestResult:
         self.equity_curve: list[tuple[datetime, Decimal]] = []
         self.trades: list[dict] = []
         self.rejections: int = 0
+        # Entries refused because another strategy already held the symbol. A
+        # portfolio run with a high count is not measuring what it looks like.
+        self.conflicts: int = 0
 
     @property
     def final_equity(self) -> Decimal:
@@ -118,6 +121,7 @@ def run_backtest(
             writer.risk_halt(bar.ts_utc, halt)
             _flatten_all(bar, broker, writer)
 
+    result.conflicts = broker.rejected_conflicts
     return result
 
 
@@ -181,11 +185,22 @@ def _track_trade(
 
     pos = broker.positions.get(fill.instrument)
     if fill.instrument not in open_trades:
+        if pos is None or pos.qty == 0:
+            # A fill that leaves us flat with no open round trip on the books is
+            # a close we never saw opened (e.g. a position adopted at startup).
+            # Recording it as an "opening" trade is what produced the old `[?]`
+            # bucket: a phantom entry that could never be closed.
+            log.warning(
+                "%s: closing fill with no open round trip on the books (%s)",
+                fill.instrument,
+                fill.client_order_id,
+            )
+            return
         # opening fill
         open_trades[fill.instrument] = {
             "entry_price": fill.price,
             "qty": fill.qty if fill.side == Side.BUY else -fill.qty,
-            "strategy_id": pos.strategy_id if pos else None,
+            "strategy_id": fill.strategy_id or (pos.strategy_id if pos else None),
             "opened_at": fill.ts_utc,
         }
         if pos is not None:
