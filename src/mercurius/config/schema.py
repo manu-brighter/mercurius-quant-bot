@@ -94,7 +94,9 @@ class BacktestConfig(BaseModel):
     fill_at: str = "next_open"
     # Data at/after this date is locked holdout: the sweep refuses to touch it.
     holdout_start: str = "2026-01-01"
-    trial_log: Path = Path("data/trials.jsonl")
+    # Tracked in git, NOT under data/: every other runtime artifact is
+    # regenerable, this one is not. See trials/README.md.
+    trial_log: Path = Path("trials/trials.jsonl")
 
 
 class NotifyConfig(BaseModel):

@@ -8,7 +8,7 @@ Your output is a written report for the human operator.
 - `data/journal.sqlite` — append-only event journal (signals, intents, fills,
   trades, equity snapshots, risk halts, session markers)
 - `python -m mercurius report --period weekly` — rendered report + scorecard
-- `data/trials.jsonl` — cumulative parameter-trial log (for DSR context)
+- `trials/trials.jsonl` — cumulative parameter-trial log (for DSR context)
 - `docs/backtests.md` (if present) — the frozen backtest baselines
 
 ## Your report must cover

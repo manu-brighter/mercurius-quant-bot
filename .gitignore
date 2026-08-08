@@ -18,3 +18,7 @@ build/
 
 # notebooks: keep sources, drop checkpoints
 notebooks/.ipynb_checkpoints/
+
+# ide
+.idea/
+.vscode/

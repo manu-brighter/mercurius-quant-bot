@@ -29,7 +29,8 @@ savings on the strength of a lucky week.
   pessimistic fills (next-bar open + slippage + spread haircut, no same-bar
   fills); stop gap-through modeled.
 - **Validation**: parameter sweeps log every trial to a cumulative
-  `data/trials.jsonl`; the winner is scored with the **Deflated Sharpe Ratio**
+  `trials/trials.jsonl` (tracked in git — it is the one project artifact that
+  cannot be regenerated); the winner is scored with the **Deflated Sharpe Ratio**
   against the project-lifetime trial count; walk-forward fit/test; **2026+
   data is a locked holdout** the sweep physically refuses to read.
 - **Live paper loop**: Alpaca IEX stream (reconnect + gap backfill), warmup

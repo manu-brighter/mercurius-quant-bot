@@ -18,5 +18,6 @@ In a Claude Code session in this repo, ask:
 ## Quarterly (human-triggered, not scheduled)
 Re-validation via walk-forward with cumulative trial counting:
 - `mercurius.backtest.sweep.walk_forward(...)` — see module docstring.
-- The trial log (`data/trials.jsonl`) must never be deleted: the Deflated
-  Sharpe Ratio is only honest if N includes every trial ever run.
+- The trial log (`trials/trials.jsonl`) must never be deleted: the Deflated
+  Sharpe Ratio is only honest if N includes every trial ever run. It is tracked
+  in git for exactly that reason — see `trials/README.md`.

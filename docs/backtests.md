@@ -45,7 +45,7 @@ the best of the four (`noise_bands_QQQ`) still has a profit factor of 0.82.
 ## Why it loses: the edge is smaller than the spread
 
 A zero-cost re-run (diagnostic only — `run_backtest` does not write to
-`data/trials.jsonl`, so this consumed no DSR trial budget):
+`trials/trials.jsonl`, so this consumed no DSR trial budget):
 
 | | net PnL | per trade |
 |---|---|---|
