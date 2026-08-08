@@ -62,8 +62,8 @@ MERCURIUS_SMOKE=1 uv run pytest -q -m smoke
 uv run python -m mercurius download-data --symbols SPY,QQQ --start 2024-01-01 --end 2025-12-31
 uv run python -m mercurius backtest
 
-# 6. feed reality check (put the numbers in this README):
-uv run python -m mercurius feed-diagnostic --symbol SPY --start 2025-11-03 --end 2025-11-07
+# 6. feed reality check (numbers recorded below under "Feed reality check"):
+uv run python -m mercurius feed-diagnostic --symbol SPY --start 2026-07-27 --end 2026-07-31
 
 # 7. paper trading (two processes):
 uv run python -m mercurius run        # the bot
@@ -75,6 +75,32 @@ Ops notes: run on a machine that stays up during US market hours
 in mid-March and late October/early November — the bot handles this itself,
 your expectations should too). A ~$5/mo VPS in us-east beats a home machine.
 Keep the host clock NTP-synced.
+
+## Feed reality check (measured 2026-08-08, week of 2026-07-27..07-31)
+
+The bot trades the free **IEX** tape — one venue, a few percent of consolidated
+volume — because that is what the free plan streams live. Backtesting the same
+tape is deliberate. This is what it costs, measured against SIP:
+
+| | SPY | QQQ |
+|---|---|---|
+| SIP regular-hours minutes | 1950 | 1950 |
+| IEX regular-hours minutes | 1950 | 1941 |
+| minutes missing from IEX | 0 (0.00%) | 9 (0.46%) |
+| close divergence, median | 0.27 bps | 0.74 bps |
+| close divergence, p95 | 1.49 bps | 4.41 bps |
+| close divergence, max | 4.63 bps | 11.09 bps |
+| IEX share of consolidated volume | 3.43% | 1.45% |
+
+Read this honestly: **QQQ's p95 divergence (4.41 bps) is larger than the
+modeled round-trip cost (1.5 slippage + 1.0 spread = 2.5 bps).** For QQQ the
+price the backtest fills at is routinely wrong by more than the cost the
+backtest charges. Missing minutes are minutes the live bot is simply blind
+during, and they cluster in quiet periods where IEX prints nothing.
+
+Over the full 2024–2025 cache the coverage gap is much larger than one calm
+week suggests: SPY 189,285 and QQQ 176,519 usable session minutes against
+~195,000 possible — QQQ is missing roughly 9% of all session minutes.
 
 ## The gates (pre-registered — do not renegotiate after seeing results)
 
