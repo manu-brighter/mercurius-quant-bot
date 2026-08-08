@@ -41,8 +41,15 @@ class FakeBroker:
         return order
 
     def submit_stop(
-        self, instrument: str, qty: Decimal, stop_price: Decimal, client_order_id: str
+        self,
+        instrument: str,
+        qty: Decimal,
+        stop_price: Decimal,
+        client_order_id: str,
+        gtc: bool = False,
     ) -> Order:
+        self.stop_tifs = getattr(self, "stop_tifs", {})
+        self.stop_tifs[client_order_id] = "gtc" if gtc else "day"
         order = Order(
             client_order_id=client_order_id,
             instrument=instrument,

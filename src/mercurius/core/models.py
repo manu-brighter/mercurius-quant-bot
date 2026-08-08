@@ -60,6 +60,9 @@ class TradeIntent:
     signal: Signal
     limit_price: Decimal | None = None
     protective_stop: Decimal | None = None
+    # Swing (multi-day) positions need their protective stop to survive the
+    # session close: GTC instead of DAY. Intraday intents leave this False.
+    stop_gtc: bool = False
 
     @property
     def client_order_id(self) -> str:

@@ -38,6 +38,7 @@ class NoiseBandsStrategy:
         self.decision_minutes = tuple(decision_minutes)
         self.trail_stop_pct = trail_stop_pct
         self.warmup_bars = 1  # warmup is session-based, handled internally
+        self.intraday = True
 
         # trailing per-minute |move from open|, one dict per completed session
         self._session_moves: deque[dict[int, Decimal]] = deque(maxlen=lookback_days)

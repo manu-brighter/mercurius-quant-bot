@@ -100,7 +100,11 @@ class Executor:
             stop_id = order.client_order_id + STOP_SUFFIX
             if self.broker.get_order(stop_id) is None:
                 self.broker.submit_stop(
-                    intent.instrument, order.filled_qty, intent.protective_stop, stop_id
+                    intent.instrument,
+                    order.filled_qty,
+                    intent.protective_stop,
+                    stop_id,
+                    gtc=intent.stop_gtc,
                 )
                 log.info(
                     "protective stop %s @ %s for %s",

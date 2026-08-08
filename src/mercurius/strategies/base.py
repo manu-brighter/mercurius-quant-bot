@@ -44,6 +44,10 @@ class Strategy(Protocol):
     strategy_id: str
     symbol: str
     warmup_bars: int
+    # True (default) = day-trading: engine force-flattens before the close.
+    # False = swing: positions may be held overnight; protective stops are GTC.
+    # Engines read this via getattr(strategy, "intraday", True).
+    intraday: bool
 
     def on_session_start(self, ctx: StrategyContext) -> None: ...
 

@@ -74,7 +74,12 @@ class AlpacaBroker:
         return self._to_order(raw)
 
     def submit_stop(
-        self, instrument: str, qty: Decimal, stop_price: Decimal, client_order_id: str
+        self,
+        instrument: str,
+        qty: Decimal,
+        stop_price: Decimal,
+        client_order_id: str,
+        gtc: bool = False,
     ) -> Order:
         from alpaca.trading.enums import OrderSide, TimeInForce
         from alpaca.trading.requests import StopOrderRequest
@@ -86,7 +91,7 @@ class AlpacaBroker:
             symbol=instrument,
             qty=float(qty),
             side=side,
-            time_in_force=TimeInForce.DAY,
+            time_in_force=TimeInForce.GTC if gtc else TimeInForce.DAY,
             stop_price=float(round_to_tick(stop_price)),
             client_order_id=client_order_id,
         )

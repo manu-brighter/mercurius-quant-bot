@@ -49,6 +49,7 @@ class OrbStrategy:
         self.max_range_atr_frac = max_range_atr_frac
         self.volume_mult = volume_mult
         self.warmup_bars = 1
+        self.intraday = True
 
         self._atr = SessionATR(14)
         self._ema = IncrementalEMA(ema_filter_period)

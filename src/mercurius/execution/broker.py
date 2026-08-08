@@ -17,7 +17,12 @@ class Broker(Protocol):
     def submit(self, intent: TradeIntent) -> Order: ...
 
     def submit_stop(
-        self, instrument: str, qty: Decimal, stop_price: Decimal, client_order_id: str
+        self,
+        instrument: str,
+        qty: Decimal,
+        stop_price: Decimal,
+        client_order_id: str,
+        gtc: bool = False,
     ) -> Order: ...
 
     def cancel(self, client_order_id: str) -> None: ...

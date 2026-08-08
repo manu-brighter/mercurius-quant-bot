@@ -62,6 +62,7 @@ def run_backtest(
     strategies_by_symbol: dict[str, list[Strategy]] = {}
     for s in strategies:
         strategies_by_symbol.setdefault(s.symbol, []).append(s)
+    swing_ids = {s.strategy_id for s in strategies if not getattr(s, "intraday", True)}
 
     # entry bookkeeping for round-trip trade records
     open_trades: dict[str, dict] = {}
@@ -108,7 +109,7 @@ def run_backtest(
         if session is not None:
             mins_left = (session.close_utc - bar.ts_utc).total_seconds() / 60
             if mins_left <= cfg.session.flatten_before_close_minutes:
-                _flatten_all(bar, broker, writer)
+                _flatten_all(bar, broker, writer, skip_strategy_ids=swing_ids)
 
         eq = broker.equity(marks)
         result.equity_curve.append((bar.ts_utc, eq))
@@ -219,11 +220,19 @@ def _track_trade(
         risk.record_exit(fill.instrument)
 
 
-def _flatten_all(bar: Bar, broker: SimBroker, writer: JournalWriter) -> None:
+def _flatten_all(
+    bar: Bar,
+    broker: SimBroker,
+    writer: JournalWriter,
+    skip_strategy_ids: set[str] | None = None,
+) -> None:
     from mercurius.core.enums import Side
 
     pos = broker.positions.get(bar.symbol)
     if pos is None or pos.qty == 0:
+        return
+    # Swing positions survive the close; risk-halt flattens (no skip set) do not.
+    if skip_strategy_ids and pos.strategy_id in skip_strategy_ids:
         return
     sig = Signal(
         strategy_id=pos.strategy_id or "engine",
