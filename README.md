@@ -19,8 +19,9 @@ savings on the strength of a lucky week.
 
 - **Strategies** (evidence-ranked, parameters frozen where the source papers
   froze them):
-  - `noise_bands` — SPY intraday momentum per Zarattini/Aziz/Barbon
+  - `noise_bands` — intraday momentum per Zarattini/Aziz/Barbon
     (SSRN 4824172): gap-aware noise bands, decisions only at :00/:30 ET.
+    Published on SPY; also run on QQQ as an honest transfer of the mechanic.
   - `orb` — 5-minute opening range breakout with non-fitted filters (doji,
     ATR-relative range width, volume surge, EMA gate), one trade/day, 2R
     target, 15:45 ET time stop. Day-of-week filters deliberately forbidden.
@@ -81,11 +82,21 @@ Keep the host clock NTP-synced.
    positive after modeled costs AND the DSR survives the cumulative trial
    count. This gate can fail. That is the point.
 2. **Go/no-go scorecard** (`mercurius report --period weekly`): ≥150 trades,
-   ≥60 sessions, profit factor ≥1.2, positive expectancy without the top 5% of
+   ≥40 sessions, profit factor ≥1.2, positive expectancy without the top 5% of
    trades, bootstrap 5th-percentile mean > 0, max DD <15%, slippage ≤1.5×
    modeled, all sessions ended cleanly, plus manual benchmarks (buy-and-hold
    SPY, random-entry control). Passing = permission to *discuss* going live
-   with $2,000.
+   with $2,000. (Amended before any live results existed: originally 60
+   sessions; compressed to 40 together with running both strategies on both
+   symbols, which doubles the trade rate — the 150-trade statistical core is
+   unchanged. Expect ~6–8 weeks.)
+2b. **Live pilot (optional, after ~1 clean month)**: once ≥20 paper sessions
+   completed with zero incidents and positive net PnL, a **$200–300** live
+   tranche via `config/pilot.yaml` is permitted — its purpose is measuring
+   real fills/slippage vs the paper simulator, not making money. Paper
+   continues in parallel at full config. The $2,000 deployment still requires
+   the complete scorecard. Never skip ahead of this ladder on the strength of
+   a good week.
 3. **Options are v2**, gated on: real-time OPRA data (Alpaca Algo Trader Plus,
    $99/mo — the free options feed is indicative/delayed and cannot be traded
    on), a quote-freshness spike, capital where one contract ≤10% of the

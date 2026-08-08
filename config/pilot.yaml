@@ -1,0 +1,22 @@
+# LIVE PILOT overlay: a $200-300 real-money tranche whose ONLY purpose is
+# measuring real fills and slippage against the paper simulator.
+#
+# Preconditions (all required BEFORE using this config with live keys):
+#   - >= 20 paper sessions completed with ZERO incidents (no unmanaged
+#     positions, no duplicate orders, no watchdog fires)
+#   - positive paper net PnL over those sessions
+#   - you have read the Swiss tax note in the README
+#
+# Usage: fund a live account with $300 max, set ALPACA_PAPER=false in .env,
+# then:  python -m mercurius run --config config/pilot.yaml
+# The equity sanity check refuses to run this config against an account far
+# from $300 — and refuses the default config against a $300 account.
+#
+# The full $2,000 deployment still requires the complete go/no-go scorecard.
+capital_usd: "300"
+
+risk:
+  max_daily_loss_usd: "6"           # 2% of pilot capital
+  max_position_notional_usd: "150"
+  max_trades_per_day: 2
+  max_concurrent_positions: 1

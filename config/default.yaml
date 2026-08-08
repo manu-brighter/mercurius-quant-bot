@@ -12,13 +12,13 @@ session:
 strategies:
   noise_bands:
     enabled: true
-    symbol: SPY
+    symbols: [SPY, QQQ]      # SPY = paper's symbol; QQQ = honest transfer
     lookback_days: 14        # frozen per SSRN 4824172 -- do not tune
     decision_minutes: [0, 30]
     trail_stop_pct: "0.005"
   orb:
     enabled: true
-    symbol: QQQ
+    symbols: [QQQ, SPY]
     range_minutes: 5
     entry_cutoff: "10:30"
     target_r_multiple: "2"
@@ -33,7 +33,7 @@ risk:
   max_position_notional_usd: "1000" # 50% of capital in one position
   risk_per_trade_pct: "0.01"        # 1% of equity risked between entry and stop
   max_concurrent_positions: 2
-  max_trades_per_day: 3             # cost discipline, not a broker rule
+  max_trades_per_day: 4             # cost discipline, not a broker rule
   equity_poll_seconds: 20
   kill_switch_file: "data/KILL"
   heartbeat_file: "data/heartbeat"

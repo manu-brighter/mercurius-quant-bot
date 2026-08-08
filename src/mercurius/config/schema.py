@@ -14,7 +14,8 @@ class SessionConfig(BaseModel):
 
 class NoiseBandsConfig(BaseModel):
     enabled: bool = True
-    symbol: str = "SPY"
+    # SPY is the paper's symbol; QQQ is an honest transfer of the same mechanic.
+    symbols: list[str] = Field(default_factory=lambda: ["SPY", "QQQ"])
     lookback_days: int = 14  # frozen per SSRN 4824172; not a tuning knob
     decision_minutes: list[int] = Field(default_factory=lambda: [0, 30])
     trail_stop_pct: Decimal = Decimal("0.005")
@@ -22,7 +23,7 @@ class NoiseBandsConfig(BaseModel):
 
 class OrbConfig(BaseModel):
     enabled: bool = True
-    symbol: str = "QQQ"
+    symbols: list[str] = Field(default_factory=lambda: ["QQQ", "SPY"])
     range_minutes: int = 5
     entry_cutoff: str = "10:30"  # ET
     target_r_multiple: Decimal = Decimal("2")
@@ -64,7 +65,9 @@ class ScorecardConfig(BaseModel):
     """Go/no-go thresholds. Pre-registered; do not loosen after seeing results."""
 
     min_trades: int = 150
-    min_sessions: int = 60
+    # 40 sessions (~2 months) with both strategies on both symbols; amended from
+    # 60 BEFORE any live results existed, together with doubling the trade rate.
+    min_sessions: int = 40
     min_profit_factor: Decimal = Decimal("1.2")
     max_drawdown_pct: Decimal = Decimal("0.15")
     max_slippage_ratio: Decimal = Decimal("1.5")
