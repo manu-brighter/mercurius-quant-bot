@@ -60,6 +60,17 @@ class KillCriteria(BaseModel):
     min_trades_before_judgement: int = 150
 
 
+class ScorecardConfig(BaseModel):
+    """Go/no-go thresholds. Pre-registered; do not loosen after seeing results."""
+
+    min_trades: int = 150
+    min_sessions: int = 60
+    min_profit_factor: Decimal = Decimal("1.2")
+    max_drawdown_pct: Decimal = Decimal("0.15")
+    max_slippage_ratio: Decimal = Decimal("1.5")
+    bootstrap_samples: int = 2000
+
+
 class JournalConfig(BaseModel):
     db_path: Path = Path("data/journal.sqlite")
 
@@ -103,6 +114,7 @@ class AppConfig(BaseModel):
     risk: RiskConfig = RiskConfig()
     kill_criteria: KillCriteria = KillCriteria()
     journal: JournalConfig = JournalConfig()
+    scorecard: ScorecardConfig = ScorecardConfig()
     data: DataConfig = DataConfig()
     backtest: BacktestConfig = BacktestConfig()
     notify: NotifyConfig = NotifyConfig()
