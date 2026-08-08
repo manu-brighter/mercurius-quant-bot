@@ -18,7 +18,9 @@ class NoiseBandsConfig(BaseModel):
     symbols: list[str] = Field(default_factory=lambda: ["SPY", "QQQ"])
     lookback_days: int = 14  # frozen per SSRN 4824172; not a tuning knob
     decision_minutes: list[int] = Field(default_factory=lambda: [0, 30])
-    trail_stop_pct: Decimal = Decimal("0.005")
+    # No fixed-% trailing stop: the paper trails on max(band, session VWAP).
+    # The old trail_stop_pct was our own invention and was removed in the
+    # 2026-08-08 fidelity audit — do not reintroduce it.
 
 
 class OrbConfig(BaseModel):
@@ -33,9 +35,33 @@ class OrbConfig(BaseModel):
     ema_filter_period: int = 50
 
 
+class Rsi2Config(BaseModel):
+    """Swing (daily-bar, multi-day hold). Disabled until its own gate run."""
+
+    enabled: bool = False
+    symbols: list[str] = Field(default_factory=lambda: ["SPY", "QQQ"])
+    rsi_period: int = 2
+    entry_rsi: Decimal = Decimal("10")
+    exit_rsi: Decimal = Decimal("65")
+    trend_sma: int = 200
+    exit_sma: int = 5
+    disaster_stop_pct: Decimal = Decimal("0.05")
+
+
+class IbsConfig(BaseModel):
+    enabled: bool = False
+    symbols: list[str] = Field(default_factory=lambda: ["SPY", "QQQ"])
+    entry_ibs: Decimal = Decimal("0.2")
+    exit_ibs: Decimal = Decimal("0.8")
+    trend_sma: int = 200
+    disaster_stop_pct: Decimal = Decimal("0.05")
+
+
 class StrategiesConfig(BaseModel):
     noise_bands: NoiseBandsConfig = NoiseBandsConfig()
     orb: OrbConfig = OrbConfig()
+    rsi2: Rsi2Config = Rsi2Config()
+    ibs: IbsConfig = IbsConfig()
 
 
 class RiskConfig(BaseModel):

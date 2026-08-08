@@ -15,7 +15,6 @@ strategies:
     symbols: [SPY, QQQ]      # SPY = paper's symbol; QQQ = honest transfer
     lookback_days: 14        # frozen per SSRN 4824172 -- do not tune
     decision_minutes: [0, 30]
-    trail_stop_pct: "0.005"
   orb:
     enabled: true
     symbols: [QQQ, SPY]

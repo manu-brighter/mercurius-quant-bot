@@ -119,3 +119,20 @@ def load_cached_daily_bars(cfg: AppConfig, symbol: str, start: str, end: str) ->
     out = [b for b in out if lo_dt <= b.ts_utc < hi_dt]
     out.sort(key=lambda b: b.ts_utc)
     return out
+
+
+def download_daily_cli(
+    cfg: AppConfig, symbols: list[str], start: str | None, end: str | None
+) -> int:
+    """`mercurius download-data --timeframe daily`.
+
+    Swing strategies need 200 sessions of warmup before their first signal, so
+    the default start reaches well back beyond the backtest window.
+    """
+    start = start or "2015-01-01"
+    end = end or cfg.backtest.end
+    total = 0
+    for symbol in symbols:
+        total += download_daily_bars(cfg, symbol.strip().upper(), start, end)
+    print(f"cached {total} daily bars across {len(symbols)} symbols")
+    return 0 if total else 1

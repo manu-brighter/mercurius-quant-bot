@@ -85,3 +85,62 @@ class SessionATR:
     @property
     def n_sessions(self) -> int:
         return len(self._trs)
+
+
+class IncrementalSMA:
+    def __init__(self, period: int) -> None:
+        self.period = period
+        self._buf: deque[Decimal] = deque(maxlen=period)
+
+    def update(self, x: Decimal) -> Decimal | None:
+        self._buf.append(x)
+        return self.value
+
+    @property
+    def value(self) -> Decimal | None:
+        if len(self._buf) < self.period:
+            return None
+        return sum(self._buf) / Decimal(self.period)
+
+
+class IncrementalRSI:
+    """Wilder-smoothed RSI. Seeded with a simple average of the first `period`
+    gains/losses, then Wilder's recursive smoothing — matches the standard
+    published formulation (and pandas-ta/TA-Lib) after warmup."""
+
+    def __init__(self, period: int = 2) -> None:
+        if period < 1:
+            raise ValueError("period must be >= 1")
+        self.period = period
+        self._prev: Decimal | None = None
+        self._avg_gain: Decimal | None = None
+        self._avg_loss: Decimal | None = None
+        self._seed_gains: list[Decimal] = []
+        self._seed_losses: list[Decimal] = []
+        self.value: Decimal | None = None
+
+    def update(self, x: Decimal) -> Decimal | None:
+        if self._prev is None:
+            self._prev = x
+            return None
+        change = x - self._prev
+        self._prev = x
+        gain = max(change, Decimal("0"))
+        loss = max(-change, Decimal("0"))
+        if self._avg_gain is None:
+            self._seed_gains.append(gain)
+            self._seed_losses.append(loss)
+            if len(self._seed_gains) < self.period:
+                return None
+            self._avg_gain = sum(self._seed_gains) / Decimal(self.period)
+            self._avg_loss = sum(self._seed_losses) / Decimal(self.period)
+        else:
+            p = Decimal(self.period)
+            self._avg_gain = (self._avg_gain * (p - 1) + gain) / p
+            self._avg_loss = (self._avg_loss * (p - 1) + loss) / p
+        if self._avg_loss == 0:
+            self.value = Decimal("100") if self._avg_gain > 0 else Decimal("50")
+        else:
+            rs = self._avg_gain / self._avg_loss
+            self.value = Decimal("100") - Decimal("100") / (1 + rs)
+        return self.value

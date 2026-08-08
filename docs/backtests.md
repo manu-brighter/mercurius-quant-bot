@@ -148,3 +148,92 @@ uv run python -m mercurius backtest --config config/backtest.yaml
 ```
 
 Deterministic: same cache, same result.
+
+---
+
+# 2026-08-08 (later) — Fidelity audit of `noise_bands` + swing pivot
+
+Two things changed after the gate failure above. Neither is a retune of the
+failed strategy: the first is a bug-class correction, the second is a new
+hypothesis.
+
+## A. `noise_bands` was not faithful to SSRN 4824172
+
+Re-reading the paper's spec (via multiple independent secondary sources — the
+PDF host is unreachable from the build environment) surfaced three deviations
+in our implementation. All three pushed in the same direction: **more round
+trips per unit of signal**, which is precisely what the cost arithmetic
+punishes.
+
+| | Our pre-audit version | The paper |
+|---|---|---|
+| Exit check | only at :00/:30 marks | **continuously**, "closed immediately" |
+| Trailing level | fixed 0.5% from entry (our invention) | **max(band, session VWAP)** for longs; min(...) for shorts |
+| Hold horizon | exit whenever price re-entered the band at a mark | hold toward the 16:00 close unless the trail is crossed |
+
+The audited implementation now matches the paper on all three. Entries remain
+half-hour level checks; the 14-day lookback stays frozen.
+
+**Remaining known deviations** (documented in the module docstring, not fixed):
+gap-adjustment arithmetic is unverified (we anchor to max/min of open and prior
+close); sizing is %-risk with no leverage rather than the paper's 2%-daily-vol
+target with up to 4x. The second affects return scale, not the sign of the
+per-trade edge — which is what the gate tests.
+
+**This is verification, not tuning.** No parameter was searched, so no DSR trial
+budget was consumed by the change itself. The re-run below is one trial.
+
+### Re-run (to be executed locally — the bar cache lives there)
+
+```
+uv run python -m mercurius backtest --config config/backtest.yaml
+```
+
+Compare against the paper's reported statistics before drawing conclusions:
+
+| Statistic | Paper (2007 – early 2024) | Our audited run |
+|---|---|---|
+| Annualized return | 19.6% (with up to 4x leverage) | _fill in_ |
+| Sharpe | 1.33 | _fill in_ |
+| Hit ratio | ~43% (highly convex: avg win >> avg loss) | _fill in_ |
+| Trades | ~1.3–1.8/day across configurations | _fill in_ |
+
+**Decision rule, pre-registered before the run:** positive after-cost
+expectancy AND trade frequency/hit ratio in the paper's neighbourhood → the
+intraday verdict was a false negative, and the strategy proceeds to the normal
+paper gate. Anything else → the intraday book is closed. Note the prior: our
+pre-audit gross edge was +$0.12/trade against $0.50 of cost, so the audit has
+to find roughly a 4x improvement in gross edge per trade to flip the verdict.
+That is a high bar and it is *supposed* to be.
+
+## B. Swing book (new hypothesis, same gate)
+
+Round-trip cost is roughly fixed in bps. Against an intraday move it was ~400%
+of gross edge; against a multi-day move of 0.5–1% it is ~3%. That is the whole
+argument for the pivot — and it is a different question, not a second attempt
+at the same one.
+
+Two strategies, both daily bars, both long-only above the 200-day SMA, both
+with published parameters (nothing searched):
+
+- **`rsi2`** — Connors RSI(2) < 10 entry, exit on RSI(2) > 65 or close > 5-day
+  SMA. ~15–30 trades/year/symbol.
+- **`ibs`** — Internal Bar Strength < 0.2 entry, exit > 0.8. ~19–25
+  trades/year/symbol.
+
+Both are *short-term reversal* reads. They are correlated: if both fail, that
+is one verdict on the effect, not two independent ones.
+
+**Health warning recorded in advance:** RSI(2) is the most-published,
+most-arbitraged pattern in retail quant. Long-sample studies report 65–79% win
+rates; out-of-sample work covering 2024–2026 reports win rates collapsing
+toward ~30%. Expect decay, and read a good backtest with suspicion.
+
+Run (locally, after downloading daily bars):
+
+```
+uv run python -m mercurius download-data --timeframe daily --symbols SPY,QQQ
+uv run python -m mercurius backtest --config config/swing.yaml
+```
+
+Same M2 gate as the intraday book. 2026 stays locked.

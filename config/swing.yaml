@@ -1,0 +1,37 @@
+# SWING book overlay: daily bars, multi-day holds, no intraday strategies.
+#
+# Why this exists: the intraday book failed the M2 gate because a ~2.5 bps
+# round-trip cost exceeded its ~1.2 bps per-trade gross edge. Cost is roughly
+# fixed per round trip, so the same cost against a multi-day move (0.5-1% per
+# trade) is ~3% of the edge instead of ~400% of it. That is a different
+# hypothesis, not a retune of the failed one — it goes through the same gate.
+#
+# Usage:
+#   python -m mercurius download-data --timeframe daily --symbols SPY,QQQ
+#   python -m mercurius backtest --config config/swing.yaml
+#
+# Intraday and swing strategies cannot share a backtest run (different bar
+# timeframes); the engine refuses the mix rather than silently mis-feeding one.
+strategies:
+  noise_bands:
+    enabled: false
+  orb:
+    enabled: false
+  rsi2:
+    enabled: true
+    symbols: [SPY, QQQ]
+  ibs:
+    enabled: true
+    symbols: [SPY, QQQ]
+
+backtest:
+  # 200-session warmup means signals only start ~10 months in.
+  start: "2015-01-01"
+  end: "2025-12-31"      # 2026 remains the locked holdout
+  slippage_bps: "1.5"
+  spread_haircut_bps: "1.0"
+
+risk:
+  # Multi-day holds: fewer, larger positions than the intraday book.
+  max_concurrent_positions: 2
+  max_trades_per_day: 2

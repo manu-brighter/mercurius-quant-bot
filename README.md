@@ -15,16 +15,44 @@ say "no edge" quickly, and hitting that outcome is the process *working*, not
 failing. Do not fund this beyond planned capital ($2,000), and never from
 savings on the strength of a lucky week.
 
-## What's implemented (v1 = stocks only)
+## Status: the intraday book failed its gate (2026-08-08)
 
-- **Strategies** (evidence-ranked, parameters frozen where the source papers
-  froze them):
+Read `docs/backtests.md` before anything else. The first full backtest came
+back negative on every strategy/symbol combination: **+$0.12 gross per trade
+against ~$0.50 of cost**. That is the pre-registered M2 gate doing its job, and
+the cost of finding out was zero dollars of capital.
+
+Two follow-ups are in flight, both through the *same* gate:
+1. **Fidelity audit** of `noise_bands` — our implementation deviated from
+   SSRN 4824172 (exit checked only at :00/:30 instead of continuously; a fixed
+   0.5% trail instead of the paper's max(band, VWAP)). Corrected; awaiting a
+   local re-run. This is a bug fix, not a retune.
+2. **Swing book** — daily bars, multi-day holds, where a fixed round-trip cost
+   is ~3% of a typical move instead of ~400% of it. New hypothesis, disabled by
+   default until it passes its own gate.
+
+Nothing here is cleared for real money. The $2,000 has not been risked.
+
+## What's implemented
+
+- **Intraday strategies** (evidence-ranked, parameters frozen where the source
+  papers froze them) — *currently failing the gate; see above*:
   - `noise_bands` — intraday momentum per Zarattini/Aziz/Barbon
-    (SSRN 4824172): gap-aware noise bands, decisions only at :00/:30 ET.
-    Published on SPY; also run on QQQ as an honest transfer of the mechanic.
+    (SSRN 4824172): gap-aware bands, entries only at :00/:30 ET, continuous
+    trailing exit at max(band, session VWAP). Published on SPY; also run on
+    QQQ as an honest transfer of the mechanic.
   - `orb` — 5-minute opening range breakout with non-fitted filters (doji,
     ATR-relative range width, volume surge, EMA gate), one trade/day, 2R
     target, 15:45 ET time stop. Day-of-week filters deliberately forbidden.
+- **Swing strategies** (daily bars, multi-day holds, long-only above the
+  200-day SMA, disabled by default — enable via `config/swing.yaml`):
+  - `rsi2` — Connors RSI(2) < 10 entry; exit on RSI(2) > 65 or close > 5-day
+    SMA. Heavily published and heavily arbitraged: expect decay.
+  - `ibs` — Internal Bar Strength < 0.2 entry, exit > 0.8. A less-crowded read
+    on the same short-reversal effect; correlated with `rsi2`, not independent.
+  - Overnight holds are supported end-to-end: swing positions are exempt from
+    the forced flatten before the close, and their protective stops are GTC.
+    A risk halt still flattens everything, swing included.
 - **Backtesting**: same strategy/risk/journal code as live; deterministic;
   pessimistic fills (next-bar open + slippage + spread haircut, no same-bar
   fills); stop gap-through modeled.

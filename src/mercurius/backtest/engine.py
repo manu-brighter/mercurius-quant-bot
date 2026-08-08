@@ -254,22 +254,39 @@ def _flatten_all(
 def run_backtest_cli(cfg: AppConfig, strategy: str | None = None) -> int:
     from mercurius.backtest.metrics import summarize
     from mercurius.data.alpaca_hist import load_cached_bars
+    from mercurius.data.daily_bars import load_cached_daily_bars
     from mercurius.strategies.registry import build_strategies
 
     strategies = build_strategies(cfg, only=strategy)
     if not strategies:
         log.error("no enabled strategies%s", f" matching {strategy!r}" if strategy else "")
         return 1
+
+    # Swing strategies consume daily bars, intraday ones minute bars. Mixing the
+    # two in one run would feed each strategy the other's timeframe, so refuse.
+    kinds = {getattr(s, "intraday", True) for s in strategies}
+    if len(kinds) > 1:
+        log.error(
+            "cannot backtest intraday and swing strategies together — they need "
+            "different bar timeframes. Run them with separate configs "
+            "(e.g. --config config/swing.yaml)."
+        )
+        return 1
+    daily = not kinds.pop()
+    load = load_cached_daily_bars if daily else load_cached_bars
+
     symbols = sorted({s.symbol for s in strategies})
     bars: list[Bar] = []
     for sym in symbols:
-        cached = load_cached_bars(cfg, sym, cfg.backtest.start, cfg.backtest.end)
+        cached = load(cfg, sym, cfg.backtest.start, cfg.backtest.end)
         if not cached:
             log.error(
-                "no cached bars for %s %s..%s — run `mercurius download-data` first",
+                "no cached %s bars for %s %s..%s — run `mercurius download-data%s` first",
+                "daily" if daily else "minute",
                 sym,
                 cfg.backtest.start,
                 cfg.backtest.end,
+                " --timeframe daily" if daily else "",
             )
             return 1
         bars.extend(cached)

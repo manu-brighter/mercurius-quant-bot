@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from mercurius.config.schema import AppConfig
 from mercurius.strategies.base import Strategy
+from mercurius.strategies.ibs_reversion import IbsReversionStrategy
 from mercurius.strategies.noise_bands import NoiseBandsStrategy
 from mercurius.strategies.orb import OrbStrategy
+from mercurius.strategies.rsi2_reversion import Rsi2ReversionStrategy
 
 
 def build_strategies(cfg: AppConfig, only: str | None = None) -> list[Strategy]:
@@ -22,7 +24,6 @@ def build_strategies(cfg: AppConfig, only: str | None = None) -> list[Strategy]:
                     symbol=symbol,
                     lookback_days=nb.lookback_days,
                     decision_minutes=tuple(nb.decision_minutes),
-                    trail_stop_pct=nb.trail_stop_pct,
                     strategy_id=f"noise_bands_{symbol}",
                 )
             )
@@ -42,6 +43,35 @@ def build_strategies(cfg: AppConfig, only: str | None = None) -> list[Strategy]:
                     strategy_id=f"orb_{symbol}",
                 )
             )
+    rsi2 = cfg.strategies.rsi2
+    if rsi2.enabled:
+        for symbol in rsi2.symbols:
+            out.append(
+                Rsi2ReversionStrategy(
+                    symbol=symbol,
+                    rsi_period=rsi2.rsi_period,
+                    entry_rsi=rsi2.entry_rsi,
+                    exit_rsi=rsi2.exit_rsi,
+                    trend_sma=rsi2.trend_sma,
+                    exit_sma=rsi2.exit_sma,
+                    disaster_stop_pct=rsi2.disaster_stop_pct,
+                    strategy_id=f"rsi2_{symbol}",
+                )
+            )
+    ibs = cfg.strategies.ibs
+    if ibs.enabled:
+        for symbol in ibs.symbols:
+            out.append(
+                IbsReversionStrategy(
+                    symbol=symbol,
+                    entry_ibs=ibs.entry_ibs,
+                    exit_ibs=ibs.exit_ibs,
+                    trend_sma=ibs.trend_sma,
+                    disaster_stop_pct=ibs.disaster_stop_pct,
+                    strategy_id=f"ibs_{symbol}",
+                )
+            )
+
     if only is not None:
         # accept either a family name ("orb") or a full instance id ("orb_QQQ")
         out = [s for s in out if s.strategy_id == only or s.strategy_id.rsplit("_", 1)[0] == only]

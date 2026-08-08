@@ -87,9 +87,7 @@ def test_swing_intent_gets_gtc_stop():
         "SPY", Side.BUY, Decimal("5"), sig, protective_stop=Decimal("95"), stop_gtc=True
     )
     ex.execute(intent)
-    ex.on_fill(
-        Fill(intent.client_order_id, "SPY", Side.BUY, Decimal("5"), Decimal("100"), TS)
-    )
+    ex.on_fill(Fill(intent.client_order_id, "SPY", Side.BUY, Decimal("5"), Decimal("100"), TS))
     stop_id = intent.client_order_id + STOP_SUFFIX
     assert broker.stop_tifs[stop_id] == "gtc"
 
@@ -100,7 +98,5 @@ def test_intraday_intent_gets_day_stop():
     sig = Signal("orb_SPY", "SPY", SignalKind.ENTER_LONG, TS, "t", stop_price=Decimal("95"))
     intent = TradeIntent("SPY", Side.BUY, Decimal("5"), sig, protective_stop=Decimal("95"))
     ex.execute(intent)
-    ex.on_fill(
-        Fill(intent.client_order_id, "SPY", Side.BUY, Decimal("5"), Decimal("100"), TS)
-    )
+    ex.on_fill(Fill(intent.client_order_id, "SPY", Side.BUY, Decimal("5"), Decimal("100"), TS))
     assert broker.stop_tifs[intent.client_order_id + STOP_SUFFIX] == "day"

@@ -51,6 +51,12 @@ def main(argv: list[str] | None = None) -> int:
             p.add_argument("--symbols", default=None, help="comma-separated, default from config")
             p.add_argument("--start", default=None)
             p.add_argument("--end", default=None)
+            p.add_argument(
+                "--timeframe",
+                choices=["minute", "daily"],
+                default="minute",
+                help="minute bars for intraday strategies, daily for swing",
+            )
         if name == "backtest":
             p.add_argument("--strategy", default=None, help="single strategy id (default: all)")
         if name == "feed-diagnostic":
@@ -73,9 +79,13 @@ def main(argv: list[str] | None = None) -> int:
 
         return run_backtest_cli(cfg, strategy=args.strategy)
     if args.command == "download-data":
+        symbols = args.symbols.split(",") if args.symbols else cfg.symbols
+        if args.timeframe == "daily":
+            from mercurius.data.daily_bars import download_daily_cli
+
+            return download_daily_cli(cfg, symbols, args.start, args.end)
         from mercurius.data.alpaca_hist import download_cli
 
-        symbols = args.symbols.split(",") if args.symbols else cfg.symbols
         return download_cli(cfg, symbols, args.start, args.end)
     if args.command == "feed-diagnostic":
         from mercurius.data.alpaca_hist import feed_diagnostic_cli
