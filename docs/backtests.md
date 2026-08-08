@@ -237,3 +237,75 @@ uv run python -m mercurius backtest --config config/swing.yaml
 ```
 
 Same M2 gate as the intraday book. 2026 stays locked.
+
+---
+
+# Pre-registration — swing book (written 2026-08-08, BEFORE the run)
+
+The swing backtest has not been run. This section is written now precisely
+because it cannot be written honestly afterwards: once the numbers are visible,
+any "expectation" is contaminated by them.
+
+## What is being tested
+
+Hypothesis #2: **short-term reversal on liquid ETFs clears costs at a multi-day
+holding period, where the same fixed round-trip cost that killed the intraday
+book is ~3% of a typical move instead of ~400% of it.**
+
+`rsi2` and `ibs`, both on SPY and QQQ, daily bars, 2015-01-01 → 2025-12-31,
+published parameters only, nothing searched. Run:
+
+```
+uv run python -m mercurius download-data --timeframe daily --symbols SPY,QQQ
+uv run python -m mercurius backtest --config config/swing.yaml
+```
+
+## Expected trade counts (from the source literature, not from our data)
+
+| Strategy | Published trades/yr/symbol | Expected over 11 yrs × 2 symbols |
+|---|---|---|
+| `rsi2` | ~15–30 | ~330–660 |
+| `ibs`  | ~19–25 | ~420–550 |
+
+A result far outside these ranges is an **implementation smell**, not a finding —
+check the strategy before interpreting the P&L. (Note the 200-session warmup:
+signals only begin ~10 months into the sample.)
+
+## Pass condition — all three required
+
+1. Positive expectancy per trade after modeled costs over the fit era.
+2. **Gross edge per trade ≥ 2× the modeled round-trip cost.** This ratio is
+   stated in advance because it is exactly what the intraday book failed
+   (0.24×) and exactly the number that is easiest to rationalize away after the
+   fact. A strategy that clears costs by a hair has no margin for the live
+   slippage that always exceeds the model.
+3. Survives a Deflated Sharpe Ratio check against the cumulative trial count in
+   `trials/trials.jsonl`.
+
+Passing means: proceed to the paper-trading gate. It does **not** mean the
+strategy works.
+
+## Fail condition and its meaning
+
+Anything else. Interpretation, stated in advance: short-term reversal on liquid
+index ETFs does not clear costs for a retail account at this size.
+
+`rsi2` and `ibs` are correlated reads of the *same* effect. If both fail, that
+is **one** verdict on short-term reversal, not two independent data points — do
+not treat it as "we tried two things."
+
+## Standing prior (recorded so a good result gets read with suspicion)
+
+RSI(2) is the most-published, most-arbitraged pattern in retail quant.
+Long-sample studies report 65–79% win rates; out-of-sample work covering
+2024–2026 reports win rates collapsing toward ~30%. A backtest here that looks
+like the 2008 book's numbers is more likely to indicate a lookahead bug than a
+surviving edge. Check the implementation first.
+
+## Binding constraint on what happens next
+
+**No parameter may change after these numbers are seen.** If a parameter is
+changed anyway, the result is a new trial: log it in `trials/trials.jsonl`, add
+a new dated section here, and carry the increased N into every future DSR
+calculation. There is no version of this where a retuned run replaces the
+original in this document.
