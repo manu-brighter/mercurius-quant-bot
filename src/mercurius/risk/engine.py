@@ -91,12 +91,11 @@ class RiskEngine:
     # -- pre-trade check ---------------------------------------------------
     def check(self, intent: TradeIntent, equity: Decimal) -> Approved | Rejected:
         st = self.state
+        if intent.signal.kind == SignalKind.EXIT:
+            return Approved()  # exits are always allowed — even (especially) when halted
+
         if st.halted:
             return Rejected(f"halted: {st.halt_reason}")
-
-        is_exit = intent.signal.kind == SignalKind.EXIT
-        if is_exit:
-            return Approved()  # exits are always allowed
 
         if st.trades_today >= self.cfg.max_trades_per_day:
             return Rejected("max_trades_per_day reached")
