@@ -10,14 +10,32 @@ which converts *no edge, no money lost* into *imaginary edge, real money lost*.
 
 ## Status
 
-- **Hypothesis #1 — intraday** (`noise_bands`, `orb`): **FAILED the M2 gate.**
-  +$0.12 gross per trade against ~$0.50 of cost. See `docs/backtests.md`.
-- **Fidelity audit** of `noise_bands` (corrected to SSRN 4824172): code done,
-  **re-run pending** on the local machine, decision rule pre-registered in
-  `docs/backtests.md`. Prior: needs ~4x gross-edge improvement to flip. Unlikely.
-- **Hypothesis #2 — swing** (`rsi2`, `ibs`, daily bars): built, **not yet run**,
-  disabled by default. Expectations pre-registered in `docs/backtests.md`.
+- **Hypothesis #1 — intraday** (`noise_bands`, `orb`): **FAILED the M2 gate,
+  and the book is now CLOSED.** The SSRN 4824172 fidelity audit ran on
+  2026-08-08: it was a real improvement (trade frequency 1.06→1.48/day, into the
+  paper's band; gross edge/trade $0.069→$0.130) but delivered 1.9x of the ~4x
+  needed. Hit ratio 17.7% against the paper's ~43%; expectancy still negative.
+- **Hypothesis #2 — swing** (`rsi2`, `ibs`, daily bars): **RAN 2026-08-08,
+  FAILED on condition 3.** Conditions 1 and 2 passed well — +$1.06/trade after
+  costs, gross/cost 5.83x — so the cost thesis behind the pivot held. It failed
+  the DSR check: best instance 0.745 against a ~0.95 threshold. Note the
+  pre-registered *interpretation* of failure ("does not clear costs") is wrong
+  for this result; it cleared costs and lost on statistical strength.
+- **Trial count is now 5** (`trials/trials.jsonl`). Carry it into every future DSR.
+- **Known defect, unfixed:** two strategies on the same symbol share one
+  position slot and one `open_trades` key, so portfolio-mode per-strategy
+  attribution is unreliable. All 2026-08-08 verdicts rest on isolated runs.
+- **Hypothesis #3** — reserved, unspent. If it fails, strategy search ends.
 - No real money has been risked. Paper account sits untouched at $2,000.
+
+## Open question to settle BEFORE hypothesis #3
+
+Condition 3 applies the DSR to a *daily-return* Sharpe, but the swing book holds
+a position only ~31% of days, so flat days mechanically depress it. Whether that
+is the right denominator is a legitimate question — and it must be answered in
+writing *before* #3 is run. Changing it now, having seen the number it produced,
+is the forbidden move. If the rule does change, the swing run is re-scored as a
+new dated section; the existing one is not edited.
 
 ## Hard rules
 

@@ -22,16 +22,23 @@ back negative on every strategy/symbol combination: **+$0.12 gross per trade
 against ~$0.50 of cost**. That is the pre-registered M2 gate doing its job, and
 the cost of finding out was zero dollars of capital.
 
-Two follow-ups are in flight, both through the *same* gate:
-1. **Fidelity audit** of `noise_bands` — our implementation deviated from
-   SSRN 4824172 (exit checked only at :00/:30 instead of continuously; a fixed
-   0.5% trail instead of the paper's max(band, VWAP)). Corrected; awaiting a
-   local re-run. This is a bug fix, not a retune.
-2. **Swing book** — daily bars, multi-day holds, where a fixed round-trip cost
-   is ~3% of a typical move instead of ~400% of it. New hypothesis, disabled by
-   default until it passes its own gate.
+Both follow-ups have now been run locally (2026-08-08) and **both failed their
+pre-registered gates**:
 
-Nothing here is cleared for real money. The $2,000 has not been risked.
+1. **Fidelity audit** of `noise_bands` — our implementation had deviated from
+   SSRN 4824172 (exit checked only at :00/:30 instead of continuously; a fixed
+   0.5% trail instead of the paper's max(band, VWAP)). Correcting it genuinely
+   helped — trade frequency moved into the paper's band and gross edge per trade
+   nearly doubled — but it delivered 1.9x of the ~4x improvement needed. Hit
+   ratio 17.7% against the paper's ~43%. **The intraday book is closed.**
+2. **Swing book** (daily bars, multi-day holds) — the cost thesis held:
+   +$1.06/trade after costs, gross edge 5.83x the round-trip cost. It failed the
+   Deflated Sharpe check (best instance 0.745 vs ~0.95 required), i.e. it cleared
+   costs but is not statistically strong enough to trust. **Does not proceed to
+   paper.**
+
+Two of three hypotheses are spent. Nothing here is cleared for real money; the
+$2,000 has not been risked.
 
 ## What's implemented
 

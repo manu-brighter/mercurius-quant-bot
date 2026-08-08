@@ -5,7 +5,8 @@ regimes (US switches mid-March/early-Nov, EU late-March/late-Oct) diverge for
 a couple of weeks each year, and reasoning in ET is the only safe frame.
 
 The NYSE calendar here is a small static table (full holidays + early closes)
-covering 2023–2027. Refresh it yearly; `known_calendar_years` guards misuse.
+covering 2016–2027. Refresh it yearly; `known_calendar_years` guards misuse.
+The 2016 floor is Alpaca's daily-history start, not an arbitrary cutoff.
 """
 
 from __future__ import annotations
@@ -23,8 +24,86 @@ MARKET_CLOSE = time(16, 0)
 EARLY_CLOSE = time(13, 0)
 
 # Full-day NYSE holidays.
+#
+# 2016-2022 were derived from Alpaca's consolidated daily bars (a weekday with
+# no bar was a closure) and cross-checked against the published NYSE calendar —
+# both agree, including the 2018-12-05 national day of mourning and the absence
+# of a New Year's holiday in 2022 (Jan 1 fell on a Saturday). Deriving beats
+# typing: a wrongly-listed holiday silently drops a real session from every
+# backtest. Alpaca daily history begins 2016-01-04, so earlier years are moot.
 _HOLIDAYS: frozenset[date] = frozenset(
     {
+        # 2016
+        date(2016, 1, 1),
+        date(2016, 1, 18),
+        date(2016, 2, 15),
+        date(2016, 3, 25),
+        date(2016, 5, 30),
+        date(2016, 7, 4),
+        date(2016, 9, 5),
+        date(2016, 11, 24),
+        date(2016, 12, 26),
+        # 2017
+        date(2017, 1, 2),
+        date(2017, 1, 16),
+        date(2017, 2, 20),
+        date(2017, 4, 14),
+        date(2017, 5, 29),
+        date(2017, 7, 4),
+        date(2017, 9, 4),
+        date(2017, 11, 23),
+        date(2017, 12, 25),
+        # 2018
+        date(2018, 1, 1),
+        date(2018, 1, 15),
+        date(2018, 2, 19),
+        date(2018, 3, 30),
+        date(2018, 5, 28),
+        date(2018, 7, 4),
+        date(2018, 9, 3),
+        date(2018, 11, 22),
+        date(2018, 12, 5),  # national day of mourning, George H. W. Bush
+        date(2018, 12, 25),
+        # 2019
+        date(2019, 1, 1),
+        date(2019, 1, 21),
+        date(2019, 2, 18),
+        date(2019, 4, 19),
+        date(2019, 5, 27),
+        date(2019, 7, 4),
+        date(2019, 9, 2),
+        date(2019, 11, 28),
+        date(2019, 12, 25),
+        # 2020
+        date(2020, 1, 1),
+        date(2020, 1, 20),
+        date(2020, 2, 17),
+        date(2020, 4, 10),
+        date(2020, 5, 25),
+        date(2020, 7, 3),  # Jul 4 fell on a Saturday
+        date(2020, 9, 7),
+        date(2020, 11, 26),
+        date(2020, 12, 25),
+        # 2021
+        date(2021, 1, 1),
+        date(2021, 1, 18),
+        date(2021, 2, 15),
+        date(2021, 4, 2),
+        date(2021, 5, 31),
+        date(2021, 7, 5),  # Jul 4 fell on a Sunday
+        date(2021, 9, 6),
+        date(2021, 11, 25),
+        date(2021, 12, 24),  # Christmas fell on a Saturday
+        # 2022
+        date(2022, 1, 17),  # no New Year's holiday: Jan 1 was a Saturday
+        date(2022, 2, 21),
+        date(2022, 4, 15),
+        date(2022, 5, 30),
+        date(2022, 6, 20),  # first NYSE Juneteenth observance
+        date(2022, 7, 4),
+        date(2022, 9, 5),
+        date(2022, 11, 24),
+        date(2022, 12, 26),
         # 2023
         date(2023, 1, 2),
         date(2023, 1, 16),
@@ -85,8 +164,26 @@ _HOLIDAYS: frozenset[date] = frozenset(
 )
 
 # 1:00 PM ET early closes.
+#
+# Unlike holidays these cannot be derived from bar data (an early close still
+# produces a daily bar), so 2016-2022 come from the published NYSE calendar.
+# They shift a daily bar's close stamp by three hours and never change bar
+# ordering, so residual error here cannot alter a swing signal or fill.
 _EARLY_CLOSES: frozenset[date] = frozenset(
     {
+        date(2016, 11, 25),
+        date(2017, 7, 3),
+        date(2017, 11, 24),
+        date(2018, 7, 3),
+        date(2018, 11, 23),
+        date(2018, 12, 24),
+        date(2019, 7, 3),
+        date(2019, 11, 29),
+        date(2019, 12, 24),
+        date(2020, 11, 27),
+        date(2020, 12, 24),
+        date(2021, 11, 26),
+        date(2022, 11, 25),
         date(2023, 7, 3),
         date(2023, 11, 24),
         date(2024, 7, 3),
@@ -101,7 +198,7 @@ _EARLY_CLOSES: frozenset[date] = frozenset(
     }
 )
 
-known_calendar_years: range = range(2023, 2028)
+known_calendar_years: range = range(2016, 2028)
 
 
 def _check_year(d: date) -> None:

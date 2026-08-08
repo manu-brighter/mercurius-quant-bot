@@ -309,3 +309,160 @@ changed anyway, the result is a new trial: log it in `trials/trials.jsonl`, add
 a new dated section here, and carry the increased N into every future DSR
 calculation. There is no version of this where a retuned run replaces the
 original in this document.
+
+---
+
+# 2026-08-08 (local execution) — Results: both runs FAILED their gates
+
+Executed on the local machine (the bar cache lives here). Two pre-registered
+decision rules were applied as written. Both fail. Five trials were appended to
+`trials/trials.jsonl`, bringing the project-lifetime count to **5**.
+
+## Blocker resolved first: the NYSE calendar stopped at 2023
+
+The swing run could not start — `core/clock.py` covered 2023–2027, and both
+`session_for()` (called per bar by the engine) and the daily-bar loader raise
+outside that range. Extending it was a prerequisite, not a choice.
+
+The 2016–2022 holidays were **derived from Alpaca's consolidated daily bars** (a
+weekday with no bar was a closure) rather than typed from memory, because the
+dangerous error direction is silent: a wrongly-listed holiday drops a real
+session from every backtest without complaint. The derived table was then
+cross-checked against the published NYSE calendar — they agree exactly,
+including the 2018-12-05 national day of mourning and the *absence* of a New
+Year's holiday in 2022 (Jan 1 was a Saturday).
+
+Verified after the change: 2,514 Alpaca sessions 2016–2025, **0 real sessions
+dropped, 0 phantom sessions invented**. Early closes cannot be derived from bar
+data (an early close still prints a bar) and come from the published calendar;
+they shift a daily bar's close stamp by three hours and never change bar
+ordering, so residual error there cannot alter a swing signal or fill.
+
+**Alpaca daily history begins 2016-01-04.** The swing pre-registration named
+2015-01-01 as the start; that data does not exist. The sample is therefore 10
+years, not 11, and the expected trade-count bands below are scaled accordingly
+(~9.2 effective years after the 200-session warmup).
+
+## A. `noise_bands` fidelity re-run — VERDICT: intraday book CLOSED
+
+Isolated per instance, because `noise_bands_SPY` and `orb_SPY` both trade SPY
+and share one broker position slot and one `open_trades[instrument]` key — the
+portfolio run cannot attribute either honestly. (Symptom in the portfolio run:
+the unattributed `[?]` bucket grew from 9 trades to 123, and ORB's win rate
+"changed" despite the audit not touching ORB.)
+
+| | Paper (SSRN 4824172) | Audited SPY | Audited QQQ | Pre-audit SPY |
+|---|---|---|---|---|
+| Trades/day | 1.3–1.8 | **1.48** | **1.43** | 1.06 |
+| Hit ratio | ~43% | 17.7% | 20.6% | 33.0% |
+| Sharpe | 1.33 | −3.11 | −2.60 | — |
+| Annualized | 19.6% (≤4x lev) | −7.4% | −7.6% | — |
+| Net PnL | — | −276.14 | −290.59 | −228.71 |
+| Gross PnL | — | +96.21 | +65.99 | +36.47 |
+| Avg win : avg loss | ">>" convex | 2.91 : 1.08 | 3.22 : 1.35 | — |
+
+**The audit was a genuine fidelity improvement**, and this deserves recording
+because it is evidence the deviation was real: trade frequency moved from
+1.06/day (below the paper's band) to 1.48/day (inside it), and the paper's
+convex payoff signature is now present (~2.7:1 win/loss at a low hit rate).
+Gross edge per trade on SPY nearly doubled, $0.069 → $0.130.
+
+**It is still nowhere near enough.** The pre-registration stated the audit needed
+roughly a 4x gross-edge improvement to flip the verdict; it delivered 1.9x.
+Gross/cost went 0.14x → 0.26x, against 1.0x required merely to break even.
+
+Applying the rule as written — *"positive after-cost expectancy AND trade
+frequency/hit ratio in the paper's neighbourhood → false negative; anything else
+→ the intraday book is closed"*: frequency now matches, **hit ratio is less than
+half the paper's, and expectancy is negative.** → **CLOSED.**
+
+Residual uncertainty, recorded but explicitly *not* grounds to reopen: two known
+deviations remain unfixed (gap-adjustment arithmetic, and %-risk sizing vs the
+paper's vol-target with leverage). Sizing affects return scale, not the sign of
+per-trade edge. A hit ratio less than half the published figure is a large
+enough gap that either the edge decayed severely after publication or a third
+deviation remains — but "it might work if we fixed something else" is not a
+result, and the budget for this hypothesis is spent.
+
+## B. Swing book — VERDICT: FAILED (condition 3)
+
+Portfolio run: 399 trades, 65.9% win, PF 1.48, net +484.15, Sharpe 0.36,
+maxDD 7.1%.
+
+The portfolio run again mis-attributes (`rsi2_SPY` and `ibs_SPY` share SPY;
+`ibs` trades ~3.5x more often and crowds `rsi2` out), so the gate was evaluated
+on isolated runs:
+
+| strategy | trades | /yr/sym | published | win% | PF | net | gross | cost | gross/cost |
+|---|---|---|---|---|---|---|---|---|---|
+| rsi2_SPY | 73 | 7.9 | 15–30 | 71.2% | 1.25 | +48.49 | +63.50 | 15.01 | 4.23x |
+| rsi2_QQQ | 73 | 7.9 | 15–30 | 75.3% | 1.63 | +132.30 | +148.01 | 15.71 | 9.42x |
+| ibs_SPY | 186 | 20.2 | 19–25 | 64.0% | 1.34 | +131.17 | +171.37 | 40.21 | 4.26x |
+| ibs_QQQ | 194 | 21.1 | 19–25 | 67.0% | 1.46 | +243.57 | +287.70 | 44.13 | 6.52x |
+| **book** | **526** | | | | | **+555.52** | **+670.58** | **115.06** | **5.83x** |
+
+Against the three pre-registered conditions, **all of which were required**:
+
+1. **Positive expectancy per trade after modeled costs** — **PASS.**
+   +$1.056/trade.
+2. **Gross edge ≥ 2x modeled round-trip cost** — **PASS**, comfortably: 5.83x
+   for the book, 4.23–9.42x per instance. The pivot's core claim held: at a
+   multi-day horizon the same fixed cost is ~17% of gross edge, against ~400%
+   intraday.
+3. **Survives a DSR check against the cumulative trial count** — **FAIL.**
+
+| | Sharpe | DSR (N=5) | |
+|---|---|---|---|
+| rsi2_SPY | 0.225 | 0.315 | FAIL |
+| rsi2_QQQ | 0.468 | 0.612 | FAIL |
+| ibs_SPY | 0.439 | 0.576 | FAIL |
+| ibs_QQQ | 0.586 | 0.745 | FAIL |
+| book | 0.362 | 0.481 | FAIL |
+
+Threshold is ~0.95 per the README. The best instance reaches 0.745. **All three
+conditions were required, so the swing book does not proceed to paper.**
+
+### The failure mode is not the one that was predicted
+
+Recorded because it matters more than the verdict. The pre-registered
+interpretation of failure read: *"short-term reversal on liquid index ETFs does
+not clear costs for a retail account at this size."* **That interpretation is
+wrong for this result.** The strategies cleared costs by 5.83x. They failed on
+statistical strength: a Sharpe of 0.36–0.59 is too weak to survive
+multiple-testing deflation, even at N=5.
+
+Two honest observations, neither of which changes the verdict:
+
+- The DSR is computed on a **daily-return** Sharpe for a book that holds a
+  position roughly 31% of days. Flat days mechanically drag that Sharpe down.
+  Whether daily-return Sharpe is the right denominator for a
+  sometimes-in-market strategy is a real question about **how condition 3 was
+  written** — and revising it now, after seeing the number it produced, is
+  exactly the move `CLAUDE.md` forbids. It must be settled in writing *before*
+  hypothesis #3, and if it is changed, this run is re-scored under the new rule
+  as a new dated section, not edited here.
+- **`rsi2`'s trade count is unresolved**: 7.9/yr/symbol against a published
+  15–30. Isolation raised it from ~4.8 to 7.9 but did not close the gap. Under
+  the pre-registered implementation-smell clause this means `rsi2`'s P&L should
+  not be read as a clean test of the published strategy at all. `ibs`, by
+  contrast, landed squarely in its published band (20.2 and 21.1 vs 19–25).
+
+## Cross-cutting bug found (affects every portfolio-mode result)
+
+Two strategies trading the same symbol share one `broker.positions[symbol]` slot
+and one `open_trades[symbol]` bookkeeping key. Consequences: per-strategy
+attribution silently collides, trades land in the `[?]` bucket, and one strategy
+suppresses another's entries. This corrupts *every* per-strategy line in a
+portfolio-mode run, including the original frozen baseline at the top of this
+document. Isolated runs are unaffected, and all verdicts here rest on those.
+
+This is a backtest bookkeeping defect, not a strategy result. It should be fixed
+before any multi-strategy run is used for a decision.
+
+## Hypothesis budget
+
+- #1 intraday — **failed** (closed after fidelity audit).
+- #2 swing — **failed** (condition 3).
+- #3 — reserved, unspent.
+
+Per `CLAUDE.md`, if #3 also fails, strategy search ends.
