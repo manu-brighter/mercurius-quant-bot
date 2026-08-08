@@ -103,7 +103,8 @@ class Position:
     avg_entry: Decimal
     opened_at: datetime
     strategy_id: str | None = None
-    protective_stop_order_id: str | None = None
+    protective_stop_price: Decimal | None = None
+    protective_stop_order_id: str | None = None  # live: the broker-side stop order
 
     @property
     def is_long(self) -> bool:
