@@ -664,3 +664,109 @@ idea.
 Note the asymmetry that makes this test worth running: condition 1 is measured
 against a benchmark that is itself already profitable. Failing it costs nothing
 except the conclusion that buy-and-hold was the answer all along.
+
+---
+
+# 2026-08-08 — Hypothesis #3 result: FAILED. Budget spent.
+
+Faber 10-month SMA timing, published parameters, run exactly as pre-registered
+above. Allocation study on the same daily bars, 2.5 bps charged per transition
+(matching the engine's per-fill charge). Window starts 2016-11-01, the first
+month end with 10 monthly closes behind it; buy-and-hold is measured over the
+identical window.
+
+| | return | Sharpe | maxDD | final |
+|---|---|---|---|---|
+| SPY trend | +132.6% | 0.80 | 25.6% | $4,651 |
+| SPY buy & hold | +271.1% | **0.88** | 33.8% | $7,422 |
+| QQQ trend | +388.5% | **1.04** | 28.6% | $9,769 |
+| QQQ buy & hold | +461.8% | 0.94 | 35.0% | $11,236 |
+| 50/50 trend blend | +243.0% | **1.01** | **20.4%** | $6,859 |
+| 50/50 buy & hold | +394.5% | 0.91 | 30.9% | $9,889 |
+
+Round trips: 1.04/yr (SPY), 0.60/yr (QQQ) — inside the pre-registered 1–3/yr
+band. Exposure ~82% of days. Costs are negligible at this frequency, which is
+the one lesson from #1 and #2 that transferred.
+
+## Verdict against the pre-registered conditions
+
+| | SPY | QQQ |
+|---|---|---|
+| 1. Sharpe ≥ buy & hold | **FAIL** (0.80 vs 0.88) | PASS (1.04 vs 0.94) |
+| 2. Lower maxDD, positive expectancy | PASS (25.6% vs 33.8%) | PASS (28.6% vs 35.0%) |
+| 3. Survives DSR | **FAIL** (0.815) | **FAIL** (0.947) |
+
+**FAILED.** All three were required.
+
+The honest prior written before the run was half right: the filter did
+underperform badly on total return in a bull sample, as predicted. But the
+mechanism it actually claims — drawdown reduction — worked on every measure,
+and on QQQ and the blend it did improve risk-adjusted return. This is the
+closest anything in this project has come to clearing its bar.
+
+## Disclosure: the QQQ verdict turned on my bookkeeping, not on the data
+
+QQQ's DSR is **0.947** against a 0.95 threshold. That margin is smaller than a
+judgment call I made earlier in the session, and the user is entitled to know
+it:
+
+| trial count N | QQQ DSR | |
+|---|---|---|
+| 7 | 0.9603 | would PASS |
+| **9 (used)** | **0.9474** | **FAILS** |
+
+N went from 7 to 9 because I chose to log the two corrected-engine re-runs as
+trials, reasoning at the time — **before this result existed** — that
+"re-measurement is still an evaluation" and that erring high was the safe
+direction. There is a real counter-argument: those re-runs evaluated *identical
+parameters* after an engine bug fix, and offered no new configuration to
+cherry-pick from, which is what N is supposed to count.
+
+I am not resolving that in favour of the passing answer. Three reasons:
+
+1. Hard rule #2 forbids deleting, resetting or rotating the trial log, and
+   un-logging entries to reach a pass is the purest form of the thing this
+   project exists to prevent.
+2. `CLAUDE.md`: *"If a change makes a previously failing strategy pass, the
+   burden is to explain why the old version was wrong, not why the new one is
+   better."* I cannot make that case cleanly now, because I am looking at the
+   answer while making it.
+3. Even at N=7, **SPY still fails condition 1 on the data** (Sharpe 0.80 vs
+   0.88) — no accounting convention touches that.
+
+If the trial-counting convention should change, it should change as a written
+rule, decided on principle, and this run re-scored under it as a **new dated
+section** — not by me picking the convenient N today. The sensitivity is
+recorded here so that decision can be made with the numbers visible.
+
+Also worth noting: the 50/50 blend (Sharpe 1.01, maxDD 20.4%) beats buy-and-hold
+on both risk measures, but the blend was **not** the pre-registered unit of
+analysis. Promoting it to one now, after seeing that it looks better than the
+per-symbol sleeves, would be inventing the test after the result.
+
+## Budget is spent — strategy search ends
+
+- #1 intraday — failed.
+- #2 swing — failed.
+- #3 trend overlay — failed.
+
+Per `CLAUDE.md`, strategy search now **ends**. Going past three requires a
+deliberate written decision recorded here.
+
+## What the ten years of evidence actually support
+
+Stated plainly, because it is the useful output of the whole exercise:
+
+1. **Nothing this project built beats passively holding the index after costs**,
+   on the pre-registered bars.
+2. **Buy-and-hold was profitable throughout** (+394.5%, Sharpe 0.91) and cost no
+   hypothesis budget.
+3. **The trend overlay is the one idea with a defensible mechanism**: it cut
+   maximum drawdown from 30.9% to 20.4% and raised blended Sharpe from 0.91 to
+   1.01. It failed the statistical bar, marginally, and its return cost over
+   this sample was large (+243% vs +394%).
+4. The infrastructure — journal, risk engine, watchdog, reconciliation,
+   append-only records — is independently useful for running *any* allocation,
+   including a passive one, and none of the above is an argument against it.
+
+No real money has been risked at any point. That is the process working.

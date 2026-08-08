@@ -31,17 +31,37 @@ which converts *no edge, no money lost* into *imaginary edge, real money lost*.
   buy-and-hold's +394.5% at Sharpe 0.91. It loses on risk-adjusted return, so
   under-deployment does not explain the gap. **Nothing built so far beats
   passive holding.**
-- **Hypothesis #3** — reserved, unspent. If it fails, strategy search ends.
+- **Hypothesis #3 — trend overlay** (Faber 10-month SMA, published params):
+  **RAN 2026-08-08, FAILED.** Closest anything has come. It cut blended maxDD
+  30.9% → 20.4% and raised blended Sharpe 0.91 → 1.01, but SPY's sleeve failed
+  Sharpe-vs-benchmark on the data (0.80 vs 0.88) and both sleeves failed the
+  DSR (SPY 0.815, QQQ **0.947** against 0.95).
+- **STRATEGY SEARCH IS OVER.** All three hypotheses are spent. Going past three
+  requires a deliberate written decision recorded in `docs/backtests.md`.
+- **Trial count is now 9.** Carry it into any future DSR.
 - No real money has been risked. Paper account sits untouched at $2,000.
 
-## Open question to settle BEFORE hypothesis #3
+## Unresolved: the trial-counting convention
 
-Condition 3 applies the DSR to a *daily-return* Sharpe, but the swing book holds
-a position only ~31% of days, so flat days mechanically depress it. Whether that
-is the right denominator is a legitimate question — and it must be answered in
-writing *before* #3 is run. Changing it now, having seen the number it produced,
-is the forbidden move. If the rule does change, the swing run is re-scored as a
-new dated section; the existing one is not edited.
+QQQ's hypothesis-#3 DSR is 0.947 at N=9 but 0.960 at N=7 — i.e. **the verdict
+turned on a bookkeeping judgment, not on data.** N rose to 9 because the two
+corrected-engine re-runs were logged as trials ("re-measurement is still an
+evaluation", decided before that result existed). The counter-argument is that
+they re-evaluated identical parameters and offered nothing to cherry-pick from.
+
+This was deliberately **not** resolved in favour of the passing answer: hard
+rule #2 forbids rotating the log, and the burden for a change that flips a fail
+to a pass is to show the old version was wrong — which cannot be argued cleanly
+while looking at the answer. If the convention changes, change it as a written
+rule and re-score as a new dated section. Note SPY fails on the data at any N.
+
+## The DSR denominator (settled 2026-08-08, before #3)
+
+Keeps the **account-level daily-return Sharpe**. Idle capital is a real cost of
+a strategy, and the go-live question is alternative-cost: should this account
+get the money rather than a passive alternative. In-market Sharpe answers a
+research question and may be reported as a labelled diagnostic, never as the
+gate. Recorded that this is the stricter reading and did not rescue anything.
 
 ## Hard rules
 
