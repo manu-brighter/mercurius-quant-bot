@@ -2,7 +2,9 @@
 .env
 
 # runtime data (never committed): bar cache, journal, logs, chain snapshots, holdout
-data/
+# NOTE: leading slash is load-bearing. An unanchored `data/` also matches
+# src/mercurius/data/ and silently drops the whole data layer from commits.
+/data/
 
 # python
 __pycache__/

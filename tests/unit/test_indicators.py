@@ -23,7 +23,7 @@ def test_ema_matches_pandas():
 
 def test_ema_none_during_warmup():
     ema = IncrementalEMA(10)
-    for i in range(9):
+    for _ in range(9):
         assert ema.update(Decimal("100")) is None
     assert ema.update(Decimal("100")) == Decimal("100")
 
