@@ -82,6 +82,53 @@ The honest next questions are about cost structure, not parameters: the entry
 mechanism pays the spread on every trade at a per-trade edge of ~1.2 cents on
 ~$1,000 of notional. Nothing survives that.
 
+## Isolated per-strategy runs (2026-08-08)
+
+The portfolio baseline above ran all four instances against **one** risk engine
+(`max_trades_per_day: 4`, `max_concurrent_positions: 2`), so they competed for
+the same budget — 914 rejected signals against 1,168 executions. That made the
+per-strategy lines above unreliable: a starved strategy and a bad strategy look
+alike. Each instance was therefore re-run alone with the full budget.
+
+| strategy | trades | rejected | win% | PF | net | gross | cost drag | sharpe | maxDD |
+|---|---|---|---|---|---|---|---|---|---|
+| noise_bands_SPY | 530 | 2 | 33.0% | 0.69 | −228.71 | +36.47 | 265.18 | −2.08 | 12.2% |
+| noise_bands_QQQ | 500 | 5 | 30.8% | 0.84 | −148.06 | +102.03 | 250.09 | −0.78 | 8.2% |
+| orb_SPY | 171 | 0 | 42.1% | 0.77 | −78.77 | +7.09 | 85.86 | −0.99 | 5.2% |
+| orb_QQQ | 256 | 0 | 44.9% | 0.87 | −85.36 | +42.12 | 127.48 | −0.75 | 6.2% |
+
+**Starvation was real, and it was not the cause of the losses.** Rejections
+collapse from 914 to 0–5 and trade counts rise substantially (noise_bands_SPY
+389 → 530), confirming the shared cap was binding. But every strategy is still
+negative in isolation, so the baseline's verdict survives the correction.
+
+Two things worth noticing:
+
+- The isolated results sum to **−540.90**, *worse* than the portfolio's
+  −441.89. The shared risk cap was reducing losses by rationing access to a
+  negative-expectancy system. That is not a strategy working; it is a brake.
+- ORB looks structurally healthier than noise_bands — win rates of 42–45%
+  against 31–33%, and a third of the trade count — yet still loses, because
+  its gross edge is even thinner per trade.
+
+### What cost level would break even
+
+Cost scales with the bps assumption, so the break-even is roughly
+`2.5 bps × gross / cost drag` (linear estimate from the table above, not a
+re-run):
+
+| strategy | break-even round-trip cost |
+|---|---|
+| noise_bands_QQQ | ~1.02 bps |
+| orb_QQQ | ~0.83 bps |
+| noise_bands_SPY | ~0.34 bps |
+| orb_SPY | ~0.21 bps |
+
+The best case needs total round-trip costs under **~1 bp**. For reference, the
+measured IEX-vs-SIP median close divergence on QQQ alone is 0.74 bps — before
+any spread or slippage is paid at all. There is no realistic execution
+improvement that closes this gap.
+
 ## Known issues in this run
 
 - **`[?]` bucket, 9 trades (−5.75).** Trades whose `strategy_id` was `None` at
