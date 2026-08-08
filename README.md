@@ -1,5 +1,17 @@
 # Mercurius Quant Bot
 
+> **ARCHIVED — 2026-08-08. Concluded: no edge found, no money risked.**
+>
+> All three pre-registered hypotheses failed their gates. Nothing built here
+> beat passively holding the index. The paper account finished untouched at
+> $2,000 and no real capital was ever deployed. The full record is in
+> [`docs/backtests.md`](docs/backtests.md); the rules that produced it are in
+> [`CLAUDE.md`](CLAUDE.md).
+>
+> **This repository is kept as a lab notebook and as working infrastructure —
+> not as a trading system to switch on.** Read the Conclusion below before
+> resurrecting any part of it.
+
 An automated intraday trading bot for US equities (SPY/QQQ), built to go
 **backtest → paper → (maybe) live** against Alpaca, with honest validation and
 fail-closed risk controls.
@@ -15,30 +27,37 @@ say "no edge" quickly, and hitting that outcome is the process *working*, not
 failing. Do not fund this beyond planned capital ($2,000), and never from
 savings on the strength of a lucky week.
 
-## Status: the intraday book failed its gate (2026-08-08)
+## Conclusion (2026-08-08): all three hypotheses failed
 
-Read `docs/backtests.md` before anything else. The first full backtest came
-back negative on every strategy/symbol combination: **+$0.12 gross per trade
-against ~$0.50 of cost**. That is the pre-registered M2 gate doing its job, and
-the cost of finding out was zero dollars of capital.
+Read `docs/backtests.md` for the full record. Summary of the whole project:
 
-Both follow-ups have now been run locally (2026-08-08) and **both failed their
-pre-registered gates**:
+| # | hypothesis | result |
+|---|---|---|
+| 1 | **Intraday** (`noise_bands`, `orb`) | **FAILED.** +$0.12 gross per trade against ~$0.50 of cost. A fidelity audit against SSRN 4824172 genuinely improved it (trade frequency into the paper's band, gross edge per trade nearly doubled) but delivered 1.9x of the ~4x needed. Hit ratio 17.7% vs the paper's ~43%. |
+| 2 | **Swing** (`rsi2`, `ibs`, daily bars) | **FAILED.** The cost thesis held — +$1.06/trade after costs, gross edge 5.83x cost — but the Deflated Sharpe check failed (0.265 for the book, 0.745 best instance, against ~0.95). It cleared costs and was still not distinguishable from luck. |
+| 3 | **Trend overlay** (Faber 10-month SMA) | **FAILED**, but closest. Cut blended max drawdown 30.9% → 20.4% and raised blended Sharpe 0.91 → 1.01. SPY's sleeve lost to its own benchmark on the data (0.80 vs 0.88), and both sleeves missed the DSR (SPY 0.815, QQQ **0.947** vs 0.95). |
 
-1. **Fidelity audit** of `noise_bands` — our implementation had deviated from
-   SSRN 4824172 (exit checked only at :00/:30 instead of continuously; a fixed
-   0.5% trail instead of the paper's max(band, VWAP)). Correcting it genuinely
-   helped — trade frequency moved into the paper's band and gross edge per trade
-   nearly doubled — but it delivered 1.9x of the ~4x improvement needed. Hit
-   ratio 17.7% against the paper's ~43%. **The intraday book is closed.**
-2. **Swing book** (daily bars, multi-day holds) — the cost thesis held:
-   +$1.06/trade after costs, gross edge 5.83x the round-trip cost. It failed the
-   Deflated Sharpe check (best instance 0.745 vs ~0.95 required), i.e. it cleared
-   costs but is not statistically strong enough to trust. **Does not proceed to
-   paper.**
+**The benchmark beat everything.** Over the same 2016–2025 sample, 50/50
+buy-and-hold returned **+394.5% at Sharpe 0.91**; the best thing built here
+returned less at comparable or worse risk-adjusted return.
 
-Two of three hypotheses are spent. Nothing here is cleared for real money; the
-$2,000 has not been risked.
+Two findings worth carrying forward:
+
+- **Cost is the binding constraint at short holding periods.** Round-trip cost
+  is roughly fixed in bps, so it was ~400% of gross edge intraday and ~17% at a
+  multi-day horizon. Hypothesis #1 did not die of a bad signal; it died of
+  arithmetic.
+- **Clearing costs is not the same as having an edge.** #2 cleared costs by
+  5.83x and still failed, because a Sharpe near 0.4 over ten years cannot be
+  told apart from luck once you correct for the number of things you tried.
+
+**Unresolved, deliberately.** Hypothesis #3's QQQ sleeve scores DSR 0.947 at
+N=9 but 0.960 at N=7 — the verdict turned on whether re-measuring identical
+parameters after a bug fix counts as a trial. It was left failing rather than
+resolved toward the passing answer while the answer was visible. See
+`CLAUDE.md`. SPY fails on the data at any N.
+
+Total capital risked: **$0**. That is the process working, not failing.
 
 ## What's implemented
 
@@ -166,7 +185,7 @@ week suggests: SPY 189,285 and QQQ 176,519 usable session minutes against
    snapshots are recorded daily from day one (`mercurius snapshot-chains`) so
    months of spread/decay data exist before that decision.
 
-## Weekly AI analyst
+## Weekly AI analyst (never activated)
 
 `analyst/` contains the prompt and setup for a **read-only** weekly Claude
 review of the journal: live-vs-backtest divergence, risk events, regime flags,
@@ -175,7 +194,36 @@ rejected by design (uncounted selection bias, destroys the out-of-sample
 record, chases the regime that just ended). Re-optimization is quarterly, via
 walk-forward, with the cumulative trial log.
 
-## Go-live checklist (later, only after the gates)
+Never scheduled: it reviews a live journal, and there was never a live session
+to review.
+
+## If you resurrect any of this
+
+The infrastructure is sound and reusable — append-only journal, latched
+risk halt, dead-man's-switch watchdog, deterministic backtest engine,
+Alpaca adapters (smoke-tested against the real paper API), parquet bar cache
+with holdout separation. What failed was strategy search, not plumbing.
+
+Non-negotiables if you continue, all learned the hard way here:
+
+1. **Pre-register the decision rule before the run.** Every verdict in
+   `docs/backtests.md` is trustworthy only because its pass/fail condition was
+   committed to git before the number existed.
+2. **`trials/trials.jsonl` is cumulative and permanent.** N=9 at archive time.
+   A DSR computed against a reset counter is a lie you tell yourself.
+3. **Benchmark against buy-and-hold, early.** This project ran three
+   hypotheses before measuring the thing that beat all of them. That should
+   have been step one.
+4. **Two strategies on one symbol share a broker position.** The simulator nets
+   per symbol because real brokers do; portfolio-mode per-strategy attribution
+   is only meaningful because entries that would merge are now refused and
+   counted. Evaluate strategies in isolation.
+
+## Go-live checklist — NOT REACHED, and now moot
+
+Retained for the record. No item below was actioned: the gates above were never
+passed, so the ladder was never climbed. If any part of this repo is ever
+resurrected, this list starts again from the top *after* a strategy passes.
 
 - [ ] Confirm Switzerland is on Alpaca's supported-country list
       (alpaca.markets/support/countries-alpaca-is-available) or email
