@@ -551,3 +551,116 @@ recorded in `CLAUDE.md` must be settled in writing, and #3 should be something
 with a plausible mechanism for beating a passive benchmark on a risk-adjusted
 basis — not another short-horizon reversal read on the same two ETFs, which is
 what #1 and #2 both were.
+
+---
+
+# Settled 2026-08-08, BEFORE hypothesis #3 — the DSR denominator
+
+`CLAUDE.md` required this to be decided in writing before #3 runs, because
+deciding it after seeing a number it produced is the forbidden move.
+
+**Decision: the gate keeps the account-level daily-return Sharpe. No change.**
+
+The objection was that a book idle ~69% of days has its Sharpe dragged down by
+flat days. True, but it is answering the right question. There are two different
+questions and only one of them gates capital:
+
+- *Is the signal skilful?* → in-market Sharpe. A research question.
+- *Should this account get the $2,000 rather than an alternative?* → account
+  Sharpe over all calendar days. **This is the go-live question**, and idle
+  capital is a real cost of the strategy, not an artifact of measurement.
+
+Deploying capital is an alternative-cost decision, so the denominator must
+include the days the strategy chose not to trade.
+
+Two supporting notes, recorded for honesty:
+- This choice does **not** rescue the failing swing book — it is the stricter
+  reading. Adopting the rule that would have helped is exactly the bias this
+  process exists to prevent, and it is worth noting that the principled answer
+  landed on the unhelpful side.
+- Using daily observations is already the *generous* choice on the other axis:
+  n_obs = 2513 rather than 120 monthly observations, and larger n_obs raises the
+  DSR. Switching to monthly returns would make the swing book look worse, not
+  better.
+
+**In-market Sharpe may be reported as a diagnostic, clearly labelled, and never
+as the gate.**
+
+---
+
+# Pre-registration — hypothesis #3 (written BEFORE the run)
+
+This spends the **final** hypothesis in the budget. Per `CLAUDE.md`, if it
+fails, strategy search ends.
+
+## Why this hypothesis, and not another reversal read
+
+#1 (intraday momentum/breakout) and #2 (short-horizon reversal) were both
+short-holding-period bets on the same two ETFs, and both died on the same
+arithmetic: edge per trade too small relative to a fixed round-trip cost. A
+third variation of that shape would be a third way of asking the same question.
+
+The benchmark run on 2026-08-08 changed what the open question is. Buy-and-hold
+50/50 returned +394.5% at Sharpe 0.91 over the same sample; everything built so
+far loses to it on risk-adjusted return. So the only interesting remaining
+question is not "can we find a trade" but:
+
+**Hypothesis #3: can a published, non-fitted trend filter improve the
+risk-adjusted return of simply holding the index?**
+
+## What is being tested
+
+The Faber 10-month moving-average timing rule (Faber, *A Quantitative Approach
+to Tactical Asset Allocation*, 2007 — the most-replicated tactical rule in the
+literature):
+
+- Decide **only on the last trading day of each month**.
+- Long the index if the monthly close > 10-month SMA of monthly closes.
+- Otherwise flat (cash).
+- Long-only, fully invested when on. No stop: the exit *is* the signal.
+- Parameters frozen by the source: **10 months, monthly decisions**. Nothing
+  searched. No variant tested. If 10 months fails, 12 months is not then tried.
+
+Sample: SPY and QQQ, daily bars 2016-01-04 → 2025-12-31, same data and the same
+1.5 + 1.0 bps cost model. 2026 stays locked.
+
+## Expected trade count
+
+~1–3 round trips per year per symbol (~20–60 over the sample across both).
+Materially outside that range is an implementation smell, not a finding.
+
+## Honest prior, recorded before the run
+
+**I expect this to underperform buy-and-hold on total return, and I am not
+confident it beats it on Sharpe either.** The 2016–2025 sample is a strong bull
+market containing three sharp V-shaped drawdowns (Q4 2018, Mar 2020, 2022). A
+monthly trend filter characteristically exits *after* the drop and re-enters
+*after* the recovery has begun — whipsaw. Faber's published edge rests on
+century-scale samples containing prolonged bear markets (1930s, 2000–2002,
+2008), which this sample does not contain.
+
+The mechanism being tested is drawdown reduction, not return enhancement. A
+result of "lower return, materially lower drawdown, higher Sharpe" is the
+success case. "Lower return and no Sharpe improvement" is failure.
+
+## Pass condition — all three required
+
+1. **Sharpe ≥ the buy-and-hold benchmark for the same symbol** over the same
+   sample. Merely positive is not enough; #2 already cleared that and was still
+   the wrong place for the money.
+2. **Max drawdown materially below buy-and-hold** (the mechanism's actual
+   claim), and positive expectancy after modeled costs.
+3. **Survives the DSR** against the cumulative trial count, using the
+   account-level daily denominator settled above.
+
+## Fail condition and its meaning
+
+Anything else. Interpretation, stated in advance: **no rule in this project's
+reach improves on passively holding the index**, the hypothesis budget is spent,
+and strategy search ends. The correct use of the infrastructure at that point is
+recording and risk-managing a passive allocation, not searching for a fourth
+idea.
+
+Note the asymmetry that makes this test worth running: condition 1 is measured
+against a benchmark that is itself already profitable. Failing it costs nothing
+except the conclusion that buy-and-hold was the answer all along.
