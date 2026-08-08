@@ -1,0 +1,87 @@
+"""Incremental indicators — O(1) per bar, no lookahead, Decimal-native.
+
+Each is a small state machine fed completed bars; values are None until the
+indicator has seen enough data. Correctness is tested against pandas
+reference implementations in tests/unit/test_indicators.py.
+"""
+
+from __future__ import annotations
+
+from collections import deque
+from decimal import Decimal
+
+
+class IncrementalEMA:
+    def __init__(self, period: int) -> None:
+        if period < 1:
+            raise ValueError("period must be >= 1")
+        self.period = period
+        self._alpha = Decimal(2) / Decimal(period + 1)
+        self._seed: list[Decimal] = []
+        self.value: Decimal | None = None
+
+    def update(self, x: Decimal) -> Decimal | None:
+        if self.value is None:
+            self._seed.append(x)
+            if len(self._seed) == self.period:
+                self.value = sum(self._seed) / Decimal(self.period)  # SMA seed
+            return self.value
+        self.value = self._alpha * x + (1 - self._alpha) * self.value
+        return self.value
+
+
+class RollingMedian:
+    """Median over a fixed window (used for volume baselines)."""
+
+    def __init__(self, window: int) -> None:
+        self.window = window
+        self._buf: deque[Decimal] = deque(maxlen=window)
+
+    def update(self, x: Decimal) -> Decimal | None:
+        self._buf.append(x)
+        if len(self._buf) < self.window:
+            return None
+        s = sorted(self._buf)
+        mid = len(s) // 2
+        if len(s) % 2:
+            return s[mid]
+        return (s[mid - 1] + s[mid]) / 2
+
+    @property
+    def value(self) -> Decimal | None:
+        if len(self._buf) < self.window:
+            return None
+        s = sorted(self._buf)
+        mid = len(s) // 2
+        return s[mid] if len(s) % 2 else (s[mid - 1] + s[mid]) / 2
+
+
+class SessionATR:
+    """ATR over completed *sessions* (daily true range from intraday data).
+
+    Feed it one (high, low, close) per completed session via `push_session`;
+    `value` is the simple average of the last `period` true ranges.
+    """
+
+    def __init__(self, period: int = 14) -> None:
+        self.period = period
+        self._trs: deque[Decimal] = deque(maxlen=period)
+        self._prev_close: Decimal | None = None
+
+    def push_session(self, high: Decimal, low: Decimal, close: Decimal) -> None:
+        if self._prev_close is None:
+            tr = high - low
+        else:
+            tr = max(high - low, abs(high - self._prev_close), abs(low - self._prev_close))
+        self._trs.append(tr)
+        self._prev_close = close
+
+    @property
+    def value(self) -> Decimal | None:
+        if len(self._trs) < self.period:
+            return None
+        return sum(self._trs) / Decimal(len(self._trs))
+
+    @property
+    def n_sessions(self) -> int:
+        return len(self._trs)

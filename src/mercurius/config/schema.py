@@ -78,6 +78,9 @@ class BacktestConfig(BaseModel):
     slippage_bps: Decimal = Decimal("1.5")
     spread_haircut_bps: Decimal = Decimal("1.0")
     fill_at: str = "next_open"
+    # Data at/after this date is locked holdout: the sweep refuses to touch it.
+    holdout_start: str = "2026-01-01"
+    trial_log: Path = Path("data/trials.jsonl")
 
 
 class NotifyConfig(BaseModel):
