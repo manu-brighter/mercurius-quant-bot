@@ -1,0 +1,62 @@
+# Mercurius runtime configuration. Secrets live in .env, never here.
+capital_usd: "2000"
+
+symbols: [SPY, QQQ]
+
+session:
+  # All times are US/Eastern. The bot never reasons in local (Swiss) time.
+  warmup_minutes_before_open: 20
+  no_new_entries_after: "15:30"
+  flatten_before_close_minutes: 10
+
+strategies:
+  noise_bands:
+    enabled: true
+    symbol: SPY
+    lookback_days: 14        # frozen per SSRN 4824172 -- do not tune
+    decision_minutes: [0, 30]
+    trail_stop_pct: "0.005"
+  orb:
+    enabled: true
+    symbol: QQQ
+    range_minutes: 5
+    entry_cutoff: "10:30"
+    target_r_multiple: "2"
+    min_range_atr_frac: "0.15"
+    max_range_atr_frac: "0.60"
+    volume_mult: "1.5"
+    ema_filter_period: 50
+
+risk:
+  max_daily_loss_usd: "40"          # 2% of capital
+  max_daily_loss_pct: "0.02"
+  max_position_notional_usd: "1000" # 50% of capital in one position
+  risk_per_trade_pct: "0.01"        # 1% of equity risked between entry and stop
+  max_concurrent_positions: 2
+  max_trades_per_day: 3             # cost discipline, not a broker rule
+  equity_poll_seconds: 20
+  kill_switch_file: "data/KILL"
+  heartbeat_file: "data/heartbeat"
+  heartbeat_stale_minutes: 3
+  on_unknown_position: "flatten"    # adopt | flatten
+
+# Pre-registered live kill criteria. Written BEFORE seeing live results; do not
+# renegotiate after. Breach => halt + alert, human decides restart.
+kill_criteria:
+  max_drawdown_from_peak_pct: "0.15"
+  slippage_vs_model_max_ratio: "2.0"
+  slippage_breach_consecutive_trades: 10
+  min_trades_before_judgement: 150
+
+journal:
+  db_path: "data/journal.sqlite"
+
+data:
+  cache_dir: "data/cache"
+  feed: "iex"          # pinned: backtest the tape we trade (free live feed is IEX)
+  adjustment: "all"
+  chain_snapshot_dir: "data/chains"
+  holdout_dir: "data/holdout"   # locked out-of-sample data; sweep code must not read
+
+notify:
+  telegram_enabled: false

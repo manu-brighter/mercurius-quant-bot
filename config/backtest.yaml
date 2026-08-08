@@ -1,0 +1,7 @@
+# Overrides applied on top of default.yaml for backtest runs.
+backtest:
+  start: "2023-01-01"
+  end: "2025-12-31"   # fit/validate era; 2026 YTD lives in data/holdout, evaluated ONCE
+  slippage_bps: "1.5"
+  spread_haircut_bps: "1.0"
+  fill_at: "next_open"

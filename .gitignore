@@ -1,0 +1,18 @@
+# secrets
+.env
+
+# runtime data (never committed): bar cache, journal, logs, chain snapshots, holdout
+data/
+
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# notebooks: keep sources, drop checkpoints
+notebooks/.ipynb_checkpoints/
