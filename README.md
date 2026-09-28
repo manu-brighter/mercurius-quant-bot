@@ -75,14 +75,14 @@ uv sync --extra dev
 uv run pytest -q
 
 cp .env.example .env  # add Alpaca PAPER keys; keep MERCURIUS_ALPACA_PAPER=true
-uv run python -m mercurius download-data --symbols SPY,QQQ --start 2024-01-01 --end 2025-12-31
+uv run python -m mercurius download-data --symbols SPY,QQQ --start 2023-01-01 --end 2025-12-31
 uv run python -m mercurius backtest --config config/backtest.yaml
 ```
 
 For the separate daily-bar swing book:
 
 ```bash
-uv run python -m mercurius download-data --timeframe daily --symbols SPY,QQQ --start 2016-01-01 --end 2025-12-31
+uv run python -m mercurius download-data --timeframe daily --symbols SPY,QQQ --start 2015-01-01 --end 2025-12-31
 uv run python -m mercurius backtest --config config/swing.yaml
 ```
 
