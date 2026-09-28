@@ -22,3 +22,6 @@ notebooks/.ipynb_checkpoints/
 # ide
 .idea/
 .vscode/
+
+# local assistant settings
+.claude/
